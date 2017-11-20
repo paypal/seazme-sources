@@ -77,7 +77,7 @@
 ;;
 
 (defn confluence-upload-cache![api [path]]
-  (->> api c/find-spaces (map (partial c/save-space-from-search api (str path "/" db-ini) api)) doall))
+  (->> api c/find-spaces (map (partial c/save-space-from-search api (str path "/" db-ini))) doall))
 
 (defn confluence-update-cache![api [path]]
   (c/pull-confl-incr api (str path "/" db-inc)))

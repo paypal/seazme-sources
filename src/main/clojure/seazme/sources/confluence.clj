@@ -59,20 +59,20 @@
         space-name (-> p :space :name)
         page-id (-> p :id)
         page-title (-> p :title)
-        path-name (str db-path space-id)]
+        path-name (str db-path "/" space-id)]
     (println "saving:" space-id page-id space-name page-title)
     (fs/mkdirs path-name)
     (spit (str path-name "/" page-id) (pr-str p))))
 
 (defn save-space-from-search [api db-path s]
+  (fs/mkdirs db-path)
   (try
     (let [#_ (prn (str "/rest/api/content/?spaceKey=" (:key s) "&" expands))
           ps (api-follow-link api (str "/rest/api/content/?spaceKey=" (:key s) "&" expands))
-          space-id (-> s :id str)
-          path-name (str db-path space-id)]
+          space-id (-> s :id str)]
       (Thread/sleep 1000)
       (->> ps (map (partial save-page-from-space db-path)) doall)
-      (spit (str path-name ".edn") (pr-str s)))
+      (spit (str db-path "/" space-id ".edn") (pr-str s)))
     (catch Exception e (println "could not download space:" (-> s :id str))
            (when-not (-> e Throwable->map :data :status (= 500)) ;;TODO double check legit 404 for 2017-04-10_11:05
              (throw e)))))

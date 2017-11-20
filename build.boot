@@ -9,7 +9,7 @@
                  [ch.qos.logback/logback-classic "1.1.1"]
                  [clj-http "2.0.1"]
                  [clj-time "0.11.0"]
-                 [clojurewerkz/elastisch "3.0.0-beta2-SNAPSHOT"]
+                 [clojurewerkz/elastisch "3.0.0-beta2"]
                  [clucy "0.4.0"]
                  [digest "1.4.4"]
                  [environ "1.0.2"]
