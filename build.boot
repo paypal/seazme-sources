@@ -47,3 +47,15 @@
                     ["twiki"         "upload-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (twiki-upload-index! (mk-es-connection e) s)
                     ["mbox"          "upload-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (prn "WIP")
                     :else "options and/or config mismatch"))))
+
+;;TODO fix docs
+(deftask build
+  "Builds an uberjar of this project that can be run with java -jar"
+  []
+  (comp
+   (aot :namespace #{'main.entrypoint})
+   (uber)
+   ;; (jar :file "project.jar" :main 'main.entrypoint)
+   (jar :file "project.jar")
+   (sift :include #{#"project.jar"})
+   (target)))
