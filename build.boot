@@ -59,6 +59,8 @@
 
                     ;;DataHub
                     ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}]      (dh/twiki-scan! c d s)
+                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-scan! c d (es/mk-conf-api s));;TODO /es/ replace
+                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-update! c d (es/mk-conf-api s));;TODO /es/ replace
                     :else "options and/or config mismatch"))))
 
 ;;TODO fix docs
