@@ -2,6 +2,7 @@
   (:require
    [clojure.data.json :as json]
    [clj-http.client :as chc]
+   [seazme.sources.twiki :as t]
    [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
    ))
 
@@ -49,3 +50,28 @@
                  :basic-auth (:basic-auth dhs-config)}]
     (fn [rest-path]
       (:body (chc/get (str url rest-path) options)))))
+
+;;
+;; Twiki
+;;
+(defn twiki-scan![{:keys [app-id index kind path]} d {:keys [path]}]
+  #_(prn "DEBUG" index kind d s)
+  (let [p (mk-datahub-post-api d)
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=twiki full scan&command=scan" app-id) nil)
+        session-id (:key body)
+        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+        ret1 (->>
+         path
+         t/find-topics
+         #_(take 10)
+         ;;TODO do partitions
+         (remove nil?)
+         (map t/read-topic!)
+         (remove nil?)
+         (map cb)
+         frequencies)
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)
+        ]
+    (prn "SUCCEEDED" ret1 ret2)
+    )
+  )

@@ -58,6 +58,7 @@
                     ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-update-index! c (es/mk-es-connection d) s)
 
                     ;;DataHub
+                    ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}]      (dh/twiki-scan! c d s)
                     :else "options and/or config mismatch"))))
 
 ;;TODO fix docs

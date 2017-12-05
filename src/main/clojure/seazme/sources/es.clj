@@ -58,8 +58,10 @@
   (->>
    path
    t/find-topics
+   #_(take 10)
    (remove nil?)
    (map t/read-topic!)
+   (remove nil?)
    (map t/parse-topic)
    (map print-and-pass)
    (map (partial put-doc! conn index kind))

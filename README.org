@@ -22,6 +22,8 @@ Examples:
 ./data-miner -a scan -c context-pp-twiki -d elasticsearch-prod -s twiki-pp-prod
 ./data-miner -a scan -c context-pp-confluence -d confluence-pp-cache -s confluence-pp-prod
 ./data-miner -a scan -c context-pp-confluence -d elasticsearch-prod -s confluence-pp-cache
+
+./data-miner -a scan -c context-pp-twiki -d datahub-prod -s twiki-pp-prod
 #+END_EXAMPLE
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.

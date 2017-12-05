@@ -4,8 +4,19 @@
 ;; Not all fields are always required
 {
 ;;Context
+ :context-pp-twiki      {
+                         :kind "twiki"
+                         :index "pp-twiki"
+                         :instance "PP"
+                         :app-id ""
+                         }
 
-;;Sources
+ ;;Sources
+ ;;-Twiki (must be run on the same FS)
+ :twiki-demo-prod {
+                 :kind "twiki"
+                 :path "db/twiki"
+                 }
 
  ;;-ElasticSearch
  :elasticsearch-prod {
