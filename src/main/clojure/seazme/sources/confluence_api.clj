@@ -45,7 +45,7 @@
         body (json/read-str (:body ret) :key-fn keyword)
         results (:results body)
         next (get-in body [:_links :next]) ;;add warning when limit == size and there is no next, something unlikely to happen
-        _ (println url status next #_(dissoc ret :body))
+        #_ (prn "XXX" url status next #_(dissoc ret :body))
         _ (Thread/sleep 100)]
     (when (= 200 status) ;;TODO 200 still returned if no authenticated
       (if next
@@ -59,4 +59,3 @@
         body (json/read-str (:body ret) :key-fn keyword)]
     (when (= 200 status)
       body)))
-

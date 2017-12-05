@@ -10,6 +10,13 @@
                          :instance "PP"
                          :app-id ""
                          }
+ :context-pp-confluence {
+                         :kind "confluence"
+                         :index "pp-conf"
+                         :instance "PP"
+                         :url "https://*/confluence"
+                         :app-id ""
+                         }
 
  ;;Sources
  ;;-Twiki (must be run on the same FS)
@@ -32,10 +39,22 @@
                        }
 
  ;;-Cache
- :confluence-pp-cache {
+ :confluence-demo-cache {
                        :kind "cache"
-                       :path "db/ppconf"
+                       :path "db/conf"
                        }
+
+ ;;-Confluence
+ :confluence-demo1-prod {
+                      :kind "confluence"
+                      :url "https://*.com/confluence"
+                      :basic-auth ["*" "*"]
+                      }
+ :confluence-demo2-prod {
+                      :kind "confluence"
+                      :url "*"
+                      :api-cookie "*"
+                      }
 
  ;;-DataHub
  :datahub-prod {
