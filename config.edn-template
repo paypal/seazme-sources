@@ -23,6 +23,12 @@
                          :instance "DEMO"
                          :app-id ""
                          }
+ :context-demo-snow       {
+                         :kind "snow"
+                         :index "demo-snow"
+                         :instance "DEMO"
+                         :app-id ""
+                         }
 
  ;;Sources
  ;;-Twiki (must be run on the same FS)
@@ -77,7 +83,7 @@
              :url "https://*/jira/rest"
              }
 
-;;-SNOW
+ ;;-SNOW
  :snow-prod {
              :kind "snow"
              :basic-auth ["*" "*"]

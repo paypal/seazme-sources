@@ -6,6 +6,7 @@
    [seazme.sources.confluence :as c]
    [seazme.sources.jira-api :as jira-api]
    [seazme.sources.jira :as j]
+   [seazme.sources.snow :as s]
    [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
    ))
 
@@ -19,7 +20,6 @@
 (defn make-sure[] (prn "Please make sure that a few last entries/days from cache are manually deleted"));;TODO automate this
 (defn- wrap-with-counter[f] (let [counter (atom 0)]
                               [counter (fn[& args] (swap! counter inc) (apply f args))]))
-(defn- print-and-pass[a] (println (frequencies a)) a)
 (defn- jts-to-str[jts] (->> jts te/from-long (tf/unparse (tf/formatters :mysql))))
 
 ;;TODO move insecure to config
@@ -173,3 +173,22 @@
      flatten
      frequencies)
     ))
+
+;;
+;; SNOW
+;;
+(defn- print-and-pass[a] (println (frequencies a)) a)
+(defn snow-scan![{:keys [index kind]} d s]
+  (let [p (mk-datahub-post-api d)
+        api (:basic-auth s)
+        in-se (p "intake-sessions?app-id=4&description=this is snow test&command=scan" nil);;TODO appid from config
+        cb #(p (format "intake-sessions/%s/document" (:key in-se)) (json/write-str %))]
+    (->>
+     (s/find-periods)
+     #_(take-last 3)
+     (map (partial s/upload-period (s/mk-snow-api api) cb))
+     (map print-and-pass)
+     flatten
+     frequencies)
+    )
+  )
