@@ -17,6 +17,12 @@
                          :url "https://*/confluence"
                          :app-id ""
                          }
+:context-demo-jira       {
+                         :kind "jira"
+                         :index "demo-jira"
+                         :instance "DEMO"
+                         :app-id ""
+                         }
 
  ;;Sources
  ;;-Twiki (must be run on the same FS)
@@ -62,4 +68,18 @@
                 :host "https://*"
                 :basic-auth ["*" "*"]
                 }
+
+ ;;-JIRA
+ :jira-prod {
+             :kind "jira"
+             :credentials ["*" "*"]
+             :cache true
+             :url "https://*/jira/rest"
+             }
+
+;;-SNOW
+ :snow-prod {
+             :kind "snow"
+             :basic-auth ["*" "*"]
+             }
  }

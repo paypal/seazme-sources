@@ -4,6 +4,8 @@
    [clj-http.client :as chc]
    [seazme.sources.twiki :as t]
    [seazme.sources.confluence :as c]
+   [seazme.sources.jira-api :as jira-api]
+   [seazme.sources.jira :as j]
    [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
    ))
 
@@ -111,3 +113,63 @@
         (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2))
       (prn "FAILED" status body)
       )))
+
+;;
+;; JIRA
+;;
+(defn jira-scan![context d s]
+  #_(prn "DEBUG" index kind d s)
+  (make-sure)
+  (let [{:keys [app-id index kind]} context
+        p (mk-datahub-post-api d)
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=this is JIRA test&command=scan" app-id) nil)
+        session-id (:key body)
+        pja-search (jira-api/mk-pja-search (:url s) (:credentials s))
+        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+        ret1 (->>
+              (j/find-periods)
+              #_(take-last 1)
+              (map (partial j/upload-period context (:cache s) false pja-search cb))
+              flatten
+              frequencies)
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
+    (prn "SUCCEEDED" ret1 ret2)
+    ))
+(defn jira-update![context d s]
+  #_(prn "DEBUG" index kind d s)
+  (let [{:keys [app-id index kind]} context
+        p (mk-datahub-post-api d)
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=this is JIRA test&command=update" app-id) nil)]
+    (if (= 200 status)
+      (let [session-id (:key body)
+            {{:keys [from to]} :range} body
+            [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+            pja-search (jira-api/mk-pja-search (:url s) (:credentials s))
+            ret1 (j/upload-period context (:cache s) false pja-search cb (list from to))
+            ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
+        (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2))
+      (prn "FAILED" status body)
+      )))
+
+(defn jira-scan-to-cache![context s]
+  #_(prn "DEBUG" context s)
+  (make-sure)
+  (let [pja-search (jira-api/mk-pja-search (:url s) (:credentials s))]
+    (->>
+     (j/find-periods)
+     #_(take-last 1)
+     (map (partial j/upload-period context true true pja-search (constantly "done")))
+     flatten
+     frequencies)
+    ))
+(defn jira-scan-to-cache2![context s]
+  #_(prn "DEBUG" context s)
+  (make-sure)
+  (let [pja-search (jira-api/mk-pja-search (:credentials s))]
+    (->>
+     (j/find-periods)
+     #_(take-last 1)
+     (map (partial j/upload-period2 context (:cache s) true pja-search (constantly "done")))
+     flatten
+     frequencies)
+    ))
