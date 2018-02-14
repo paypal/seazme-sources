@@ -18,13 +18,17 @@ After making sure that software from Prerequisites is installed, clone this repo
 
 Examples:
 #+BEGIN_EXAMPLE
-./data-miner -a reinit -c context-pp-twiki -d elasticsearch-prod
-./data-miner -a scan -c context-pp-twiki -d elasticsearch-prod -s twiki-pp-prod
-./data-miner -a scan -c context-pp-confluence -d confluence-pp-cache -s confluence-pp-prod
-./data-miner -a scan -c context-pp-confluence -d elasticsearch-prod -s confluence-pp-cache
+./data-miner -a reinit -c context-demo-twiki -d elasticsearch-prod
+./data-miner -a scan -c context-demo-twiki -d elasticsearch-prod -s twiki-demo-prod
+./data-miner -a scan -c context-demo-confluence -d confluence-demo-cache -s confluence-demo-prod
+./data-miner -a scan -c context-demo-confluence -d elasticsearch-prod -s confluence-demo-cache
 
-./data-miner -a scan -c context-pp-twiki -d datahub-prod -s twiki-pp-prod
-./data-miner -a scan -c context-pp-confluence -d datahub-prod -s confluence-pp-prod
+./data-miner -a scan -c context-demo-twiki -d datahub-prod -s twiki-demo-prod
+./data-miner -a scan -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
+
+./data-miner -a update -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
+
+./data-miner -a update -c context-hbase -d elasticsearch-prod
 #+END_EXAMPLE
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.

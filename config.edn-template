@@ -3,7 +3,12 @@
 ;; Not all combinations are valid
 ;; Not all fields are always required
 {
-;;Context
+ ;;Context
+ :context-hbase         {
+                         :kind "hbase"
+                         :prefix "test"
+                         }
+
  :context-pp-twiki      {
                          :kind "twiki"
                          :index "pp-twiki"
@@ -88,4 +93,24 @@
              :kind "snow"
              :basic-auth ["*" "*"]
              }
+ ;;-Hadoop (currently one hardcoded backend is supported)
+ :hbase {
+         :kind "hbase"
+         :configuration {
+                         "hbase.client.retries.number" "1"
+                         "hbase.client.scanner.timeout.period" "1800000"
+                         "zookeeper.session.timeout" "1000"
+                         "zookeeper.recovery.retry" "1"
+                         "hbase.zookeeper.property.clientPort" "2181"
+                         "hbase.zookeeper.quorum" "<comma delimited hosts list>"
+                         "hadoop.security.authentication" "kerberos"
+                         "hbase.security.authentication" "kerberos"
+                         "hbase.master.kerberos.principal" "hbase/_HOST@<host>"
+                         "hbase.regionserver.kerberos.principal" "hbase/_HOST@<host>"
+                         "zookeeper.znode.parent" "/hbase-secure"
+                         }
+         :kerberos {
+                    :user "<username>@<host>.COM" :path "username.keytab"
+                    }
+         }
  }

@@ -32,7 +32,8 @@
          '[clojure.core.match :refer [match]]
          '[seazme.common.config :as config]
          '[seazme.sources.es :as es]
-         '[seazme.sources.datahub :as dh])
+         '[seazme.sources.datahub :as dh]
+         '[seazme.sources.es2 :as es2])
 
 (cli/defclifn -main
   "Executes data miner for Confluence, Twiki, mbox, etc based on options and configuration defined in config.edn. Depending on a context, only some combinations of options and configuration are valid."
@@ -50,7 +51,7 @@
                     ;;ElasticSearch
                     ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (es/reinit! c (es/mk-es-connection d))
 
-                    ;;ElasticSearch
+                    ;;ElasticSearch (pre HBASE version, still works)
                     ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (es/twiki-scan! c (es/mk-es-connection d) s)
                     ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (es/confluence-scan-2cache! c d (es/mk-conf-api s))
                     ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-scan-2index! c (es/mk-es-connection d) s)
@@ -66,6 +67,9 @@
                     ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache! c s)
                     ["scan2"  {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache2! c s)
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}]       (dh/snow-scan! c d s)
+
+                    ;;HBASE (reusing context, need args)
+                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (es2/hbase-update! c (es/mk-es-connection d))
                     :else "options and/or config mismatch"))))
 
 ;;TODO fix docs
