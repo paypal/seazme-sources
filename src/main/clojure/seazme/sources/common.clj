@@ -3,7 +3,6 @@
 
 (defn strip-html-tags [s] (.text (Jsoup/parse s)))
 
-
 (defn file-exists [f])
 (defn to-edn [f d] (spit f (pr-str d)))
 (defn from-edn [f] (read-string (slurp f)))
