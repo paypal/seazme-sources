@@ -6,7 +6,7 @@
                  [org.clojure/math.combinatorics "0.1.1"]
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [byte-streams "0.2.0"]
-                 [ch.qos.logback/logback-classic "1.1.1"]
+                 ;[ch.qos.logback/logback-classic "1.1.1"]
                  [clj-http "2.0.1"]
                  [clj-time "0.11.0"]
                  [clojurewerkz/elastisch "3.0.0"]
@@ -17,12 +17,20 @@
                  [me.raynes/fs "1.4.4"]
                  [org.apache.james/apache-mime4j-core "0.7.2"]
                  [org.apache.james/apache-mime4j-dom "0.7.2"]
-                 [org.jsoup/jsoup "1.8.3"]]
+                 [org.jsoup/jsoup "1.8.3"]
+                 [org.clojure/java.jdbc "0.7.3"]
+                 [mysql/mysql-connector-java "5.1.25"]
+                 [org.clojure/tools.logging "0.3.1"]
+                 [cbass "0.1.5"]
+                 [com.grammarly/perseverance "0.1.2"]
+                 [org.apache.hadoop/hadoop-common "2.6.0"] [com.google.guava/guava "15.0"]
+                 ]
+ :resource-paths #{"resources"}
  :source-paths   #{"src/main/clojure"})
 
 (require '[boot.cli :as cli]
          '[clojure.core.match :refer [match]]
-         '[seazme.sources.config :as config]
+         '[seazme.common.config :as config]
          '[seazme.sources.es :as es]
          '[seazme.sources.datahub :as dh])
 

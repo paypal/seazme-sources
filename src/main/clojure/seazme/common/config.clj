@@ -1,4 +1,4 @@
-(ns seazme.sources.config
+(ns seazme.common.config
   (:require [clojure.edn :as edn]
             [environ.core :refer [env]]))
 
