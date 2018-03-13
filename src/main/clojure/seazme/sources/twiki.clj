@@ -3,9 +3,6 @@
    [clojure.data.json :as json])
   (:use seazme.sources.common))
 
-(def instance-name "PP")
-(def twiki-type-name "twiki")
-
 (def topic-info-regex #"%META:TOPICINFO\{((?:\w+=\"[^\"]+\"\s*)+)\}%\n")
 (def topic-parent-regex #"%META:TOPICPARENT\{((?:\w+=\"[^\"]+\"\s*)+)\}%\n")
 (defn- extract-topic[regex sample]
@@ -13,7 +10,7 @@
         pairs (->> content (re-seq #"(?:(\w+)=\"([^\"]+)\"\s*)") (map rest) (map vec))]
     (into {} (for [[k v] pairs] [(keyword k) v]))))
 
-(defn parse-topic[{:keys [topic web content]}]
+(defn parse-topic[kind bu instance base-url {:keys [topic web content]}]
   (let [r clojure.string/replace
         text (->
               content
@@ -36,12 +33,13 @@
               )
         page-attrs (merge (extract-topic topic-info-regex content)
                           (extract-topic topic-parent-regex content))]
-    {:id (format "%s/%s/%s/%s" instance-name twiki-type-name web topic)
-     :url (format "https://*/wiki/%s/%s" web topic)
+    {:id (format "%s\\%s\\%s\\%s\\%s" kind bu instance web topic);;TODO change / into \\ (due to URL spec and enginex) - inall (make it common fun) add actual instance
+     :url (format "%s/%s/%s" base-url web topic) ;;TODO factor out
      :level0 web
      :level1 topic
-     :instance-name instance-name
-     :type-name twiki-type-name
+     :kind-name kind ;;TODO rename to kind - inall
+     :bu-name bu ;;TODO rename to BU - inall
+     :instance-name instance ;;keep instance but change meaning - inall
      :parent-id ""
      :last-author (page-attrs :author)
      :last-ts (page-attrs :date)

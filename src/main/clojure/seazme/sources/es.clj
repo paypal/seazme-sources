@@ -54,7 +54,7 @@
 ;;
 ;; Twiki
 ;;
-(defn twiki-scan![{:keys [index kind]} conn {:keys [path]}]
+(defn twiki-scan![{:keys [index kind instance base-url]} conn {:keys [path]}]
   (->>
    path
    t/find-topics
@@ -62,7 +62,7 @@
    (remove nil?)
    (map t/read-topic!)
    (remove nil?)
-   (map t/parse-topic)
+   (map (partial t/parse-topic kind instance "main" base-url)) ;;TODO "main" into config
    (map print-and-pass)
    (map (partial put-doc! conn index kind))
    (map :created)
