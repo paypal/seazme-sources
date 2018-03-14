@@ -99,8 +99,8 @@
    (map (partial str path "/"))
    (map c/find-pages)
    (mapcat sort) ;;sort to make sure we update from oldest to newest (only for incremental scan) - never remove it
-   (map (partial c/read-page! url instance))
-   (map c/parse-page)
+   (map c/read-page!)
+   (map (partial c/parse-page "confluence" instance "main" url)) ;;TODO "main" into config
    (map print-and-pass)
    (map (partial put-doc! conn index kind))
    (map :created)
@@ -114,8 +114,8 @@
              args
              :path+file
              c/find-pages
-             (map (partial c/read-page! base-url instance-name))
-             (map c/parse-page)
+             (map c/read-page!)
+             (map (partial c/parse-page "confluence" instance-name "main" base-url))
              (map (partial put-doc! conn indx ttype))
              (map :created)
              frequencies))]

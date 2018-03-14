@@ -7,11 +7,11 @@
   (:use seazme.sources.confluence-api seazme.sources.scheduler seazme.sources.common))
 
 
-(def confluence-type-name "confluence")
+(def confluence-type-name "confluence");;TODO this or rahter kind inall
 
 (def conf-ts-formatter (tf/formatters :date-time))
 
-(defn parse-page [{:keys [base-url instance-name content]}]
+(defn parse-page [kind bu instance base-url content]
   (let [p content
         space-id (-> content :space :id str) ;;TODO why str
         space-name (-> content :space :name)
@@ -19,22 +19,20 @@
         page-id (-> content :id)
         page-title (-> content :title)
         text (-> content :body :storage :value strip-html-tags)]
-    {:id (format "%s/%s/%s/%s" instance-name confluence-type-name space-id page-id)
+    {:id (format "%s\\%s\\%s\\%s\\%s" kind bu instance space-id page-id)
      :url (str base-url (-> content :_links :webui))
      :level0 space-key
      :level1 page-title
-     :instance-name instance-name
-     :type-name confluence-type-name
+     :kind-name kind
+     :bu-name bu
+     :instance-name instance
      :parent-id ""
      :last-author (-> content :version :by :username)
      :last-ts (-> (->> content :version :when (tf/parse conf-ts-formatter) tr/to-long) (quot 1000))
      :text text
      :text-size (inc (quot (count text) 1024))}))
 
-(defn read-page! [base-url instance-name f]
-  {:content (-> f slurp read-string)
-   :base-url base-url
-   :instance-name instance-name})
+(defn read-page![f] (-> f slurp read-string))
 
 ;;
 ;; initial scan ;;TODO rename
