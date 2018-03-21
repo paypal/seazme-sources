@@ -33,8 +33,9 @@
   (let [mapping-types {kind
                        {:properties
                         {:url sna
+                         :kind-name sna
+                         :bu-name sna
                          :instance-name sna
-                         :type-name sna
                          :level0 sna
                          :level1 sna
                          :parent-id sna
