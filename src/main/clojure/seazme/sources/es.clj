@@ -15,7 +15,7 @@
 (def db-inc-pro "processed")
 
 (defn mk-es-connection[profile & {:keys [debug debug-body] :or {debug false debug-body false}}]
-  (esr/connect (profile :host) {:insecure? true :basic-auth (profile :basic-auth) :debug debug :debug-body debug-body}))
+  (esr/connect (profile :host) {:socket-timeout 60000 :conn-timeout 60000 :insecure? true :basic-auth (profile :basic-auth) :debug debug :debug-body debug-body}))
 
 (defn mk-conf-api[profile]
   (match [profile]
