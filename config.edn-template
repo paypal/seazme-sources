@@ -49,12 +49,14 @@
                       :kind "elasticsearch"
                       :host "http://*"
                       :basic-auth ["*" "*"]
+                      :instance "primary"
                       }
 
  :elasticsearch-local {
                        :kind "elasticsearch"
                        :host "http://127.0.0.1:9200"
                        :basic-auth ["" ""]
+                       :instance "standby"
                        }
 
  ;;-Cache
