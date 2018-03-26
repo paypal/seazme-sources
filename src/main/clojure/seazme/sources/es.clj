@@ -47,6 +47,21 @@
     [(esi/delete conn index)
     (esi/create conn index {:mappings mapping-types})]))
 
+(defn reinit-datasources![conn]
+  (let [index "datasources"
+        mapping-types {"datasources"
+                       {:properties
+                        {:current_status sna
+                         :name sna
+                         :owners sna
+                         :business_unit sna
+                         :last_updated_time {:type "integer"}
+                         :tag sna
+                         :notes sna
+                         }}}]
+    [(esi/delete conn index)
+     (esi/create conn index {:mappings mapping-types})]))
+
 ;;TODO can we create two same docs? test it
 (defn put-doc![conn indx ttype doc]
   (esd/put conn indx ttype (:id doc) doc)) ;;TODO can we create two same docs? test it
