@@ -11,7 +11,7 @@
   (defn read-last-state[prefix]
     (try
       (from-edn (file-name prefix))
-      (catch Exception e nil)))
+      (catch Exception e (throw (Exception. (str "please (re)create file:" file-name " with last state or nil if deployed for the first time"))))))
   (defn write-last-state[prefix state]
     (to-edn (file-name prefix) state)))
 
@@ -62,23 +62,33 @@
           (filter filter-action)
           rest))))
 
+;;TODO add counter, add tsx to ES/datasources, show all sessions before updating
 (defn- remove-noise[e] (dissoc e :_id :_shards :_version))
 (defn hbase-update! [{:keys [prefix]} conn]
   (let [last-update (read-last-state prefix)
         update-es-fn (partial update-es conn prefix)
         _ (println "Last state:" last-update)
         sessions (find-sessions last-update)
-        upload-one-session-fn (fn[data-entry-kv]
-                                (let [session-id (-> data-entry-kv second :self :meta :id)
-                                      session-tsx (-> data-entry-kv second :self :meta :tsx)
-                                      res (->> prefixes
+        upload-one-session-fn (fn[session-entry-kv]
+                                (let [session-id (-> session-entry-kv second :self :meta :id)
+                                      session-tsx (-> session-entry-kv second :self :meta :tsx)
+                                      datasource-record (let [e (-> session-entry-kv second)]
+                                                          {:current_status "working"
+                                                           :business_unit (-> e :app :bu)
+                                                           :owners "TBD"
+                                                           :last_updated_time (-> e :self :range :to (quot 1000))
+                                                           :tag "N/A" :name (-> e :app :kind)
+                                                           :id (-> e :app :meta :id)
+                                                           :notes (str (-> e :app :description) ", from:" session-tsx)})
+                                      res1 (->> prefixes
                                                (pmapr 4 #(->> % (get-data-entries-seq session-id) (map update-es-fn) doall))
                                                (mapcat identity)
                                                (map remove-noise)
-                                               doall)]
+                                               doall)
+                                      res2 (put-doc! conn  "datasources" "datasources" datasource-record)];;TODO wrap with try like above
                                   (write-last-state prefix session-tsx)
                                   (println "updated:" session-tsx "for session-id" session-id)
-                                  res))]
+                                  res1))]
     (->> sessions (mapcat upload-one-session-fn) frequencies println)))
 
 (comment ;performance tests

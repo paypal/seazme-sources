@@ -50,6 +50,7 @@
                     ;;TODO make it very type aware and validate everything
                     ;;ElasticSearch
                     ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (es/reinit! c (es/mk-es-connection d))
+                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)]      (es/reinit-datasources! (es/mk-es-connection d))
 
                     ;;ElasticSearch (pre HBASE version, still works)
                     ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (es/twiki-scan! c (es/mk-es-connection d) s)
