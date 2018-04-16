@@ -30,7 +30,8 @@
 ;;
 (def sna {:type "string" :index "not_analyzed"})
 (defn reinit![{:keys [index kind]} conn]
-  (let [mapping-types {kind
+  (prn "DANGER: please explicitly uncomment following line:" index kind conn);; software fuse
+  #_(let [mapping-types {kind
                        {:properties
                         {:url sna
                          :kind-name sna
