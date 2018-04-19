@@ -17,11 +17,11 @@
                                         ;apiurl vs deeplink url
                          :app-id "" ; datahub
                          }
- :context-pp-confluence {
+ :context-demo-confluence {
                          :kind "confluence"
-                         :index "pp-conf"
-                         :instance "PP"
-                         :url "https://*/confluence"
+                         :index "demo-conf"
+                         :instance "DEMO"
+                         :base-url "https://*/confluence"
                          :app-id ""
                          }
 :context-demo-jira       {
