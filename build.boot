@@ -65,7 +65,6 @@
                     ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-scan! c d s)
                     ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-update! c d s)
                     ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache! c s)
-                    ["scan2"  {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache2! c s)
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}]       (dh/snow-scan! c d s)
 
                     ;;HBASE (reusing context, need args)
