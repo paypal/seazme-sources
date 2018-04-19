@@ -7,8 +7,8 @@
    [seazme.sources.jira-api :as jira-api]
    [seazme.sources.jira :as j]
    [seazme.sources.snow :as s]
-   [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
-   ))
+   [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te])
+  (:use seazme.sources.common))
 
 
 ;;TODO replace conf->confluence everywhere
@@ -121,15 +121,16 @@
   #_(prn "DEBUG" index kind d s)
   (make-sure)
   (let [{:keys [app-id index kind]} context
+        pf (get d :parallel-factor 1)
         p (mk-datahub-post-api d)
-        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=this is JIRA test&command=scan" app-id) nil)
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA full scan&command=scan" app-id) nil)
         session-id (:key body)
         pja-search (jira-api/mk-pja-search (:url s) (:credentials s))
         [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
         ret1 (->>
               (j/find-periods)
               #_(take-last 1)
-              (map (partial j/upload-period context (:cache s) false pja-search cb))
+              (pmapr pf (partial j/upload-period context (:cache s) false pja-search cb))
               flatten
               frequencies)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
@@ -139,7 +140,7 @@
   #_(prn "DEBUG" index kind d s)
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
-        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=this is JIRA test&command=update" app-id) nil)]
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA update&command=update" app-id) nil)]
     (if (= 200 status)
       (let [session-id (:key body)
             {{:keys [from to]} :range} body
@@ -159,17 +160,6 @@
      (j/find-periods)
      #_(take-last 1)
      (map (partial j/upload-period context true true pja-search (constantly "done")))
-     flatten
-     frequencies)
-    ))
-(defn jira-scan-to-cache2![context s]
-  #_(prn "DEBUG" context s)
-  (make-sure)
-  (let [pja-search (jira-api/mk-pja-search (:credentials s))]
-    (->>
-     (j/find-periods)
-     #_(take-last 1)
-     (map (partial j/upload-period2 context (:cache s) true pja-search (constantly "done")))
      flatten
      frequencies)
     ))
