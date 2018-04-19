@@ -9,11 +9,13 @@
                          :prefix "test"
                          }
 
- :context-pp-twiki      {
+ :context-demo-twiki      {
                          :kind "twiki"
-                         :index "pp-twiki"
-                         :instance "PP"
-                         :app-id ""
+                         :index "demo-twiki" ; needed by reinit and direct ES
+                         :instance "DEMO"
+                         :base-url "https://.../wiki"
+                                        ;apiurl vs deeplink url
+                         :app-id "" ; datahub
                          }
  :context-pp-confluence {
                          :kind "confluence"
