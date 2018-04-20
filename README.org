@@ -1,0 +1,31 @@
+* Confluence to ElasticSearch
+
+A collection of business processes used to mine Confluence, discover information, intelligently index it and expose all of it as a lightning fast search.
+
+*** Prerequisites
+
+- Git (of course).
+- JRE 8 must exist in PATH (JRE 7 is fine too, but might be deprecated).
+- Boot 2.x: installation instructions are avaliable [[https://github.com/boot-clj/boot#install][here]].
+
+*** Configuration
+
+search profiles are prod level
+
+*** Usage
+
+After making sure that software from Prerequisites is installed, clone this repo and bring up REPL with ~boot repl~ command (it might take a few minutes to download all dependencies when run for the first time).
+
+Examples:
+#+BEGIN_EXAMPLE
+$ ./data-miner  -a reinit-index -s sp-twiki -e esp-local
+
+$ ./data-miner -d conf -a upload-index -s sp-xm-conf -e esp-local
+$ ls db/ppconf/incremental-scans/
+$ ./data-miner -d conf -a update-cache -s sp-pp-conf -c cop-pp-prod
+$ ls db/ppconf/incremental-scans/
+$ ./data-miner -d conf -a update-index -s sp-pp-conf -e esp-local
+$ ls db/ppconf/incremental-scans/
+#+END_EXAMPLE
+
+Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.
