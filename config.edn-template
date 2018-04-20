@@ -1,0 +1,31 @@
+;; All config is by convention
+;; Different types of profiles reside on the same level
+;; Not all combinations are valid
+;; Not all fields are always required
+
+{
+ ;; Confluence Profiles
+ :cop-pp-prod {
+              :url "*"
+              :basic-auth ["*" "*"]
+              }
+ :cop-xm-prod {
+              :url "*"
+              :api-cookie "*"
+              }
+
+ ;; ES Profiles
+ :esp-prod {
+           :host "*"
+           :basic-auth ["*" "*"]
+           }
+
+ :esp-local {
+            :host "http://127.0.0.1:9200"
+            :basic-auth ["" ""]
+            }
+
+;; Search Profiles ([path-to-db index-name type-name base-url instance-name])
+ :sp-twiki ["db/twiki" "pp-twiki" "twiki"]
+ :sp-demo-conf ["db/ppconf" "demo`-conf" "confluence" "https://*/confluence" "PP"]
+ }
