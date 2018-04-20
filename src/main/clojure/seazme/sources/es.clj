@@ -4,7 +4,7 @@
    [seazme.sources.twiki :as t]
    [seazme.sources.confluence :as c]
    [seazme.sources.mbox :as m]
-   [seazme.sources.api :as a]
+   [seazme.sources.confluence-api :as a]
    [clojurewerkz.elastisch.rest :as esr]
    [clojurewerkz.elastisch.rest.index :as esi]
    [clojurewerkz.elastisch.rest.document :as esd])
@@ -15,7 +15,7 @@
 (def db-inc-pro "processed")
 
 (defn mk-es-connection[profile & {:keys [debug debug-body] :or {debug false debug-body false}}]
-  (esr/connect (profile :host) {:basic-auth (profile :basic-auth) :debug debug :debug-body debug-body}))
+  (esr/connect (profile :host) {:insecure? true :basic-auth (profile :basic-auth) :debug debug :debug-body debug-body}))
 
 (defn mk-conf-api[profile]
   (match [profile]
@@ -23,9 +23,14 @@
          [{:url u :basic-auth ba}] (a/mk-conf-api-auth :get u ba 60000)
          :else (throw (java.lang.Exception. (str "bad profile:" profile)))))
 
+(defn- print-and-pass[a] (println (:url a)) a)
+
+;;
+;; ElasticSearch
+;;
 (def sna {:type "string" :index "not_analyzed"})
-(defn reinit-index![conn [path indx ttype]]
-  (let [mapping-types {ttype
+(defn reinit![{:keys [index kind]} conn]
+  (let [mapping-types {kind
                        {:properties
                         {:url sna
                          :instance-name sna
@@ -38,63 +43,68 @@
                          :text {:type "string" :analyzer "snowball"}
                          :text-size {:type "integer"}
                          }}}]
-    [(esi/delete conn indx)
-    (esi/create conn indx {:mappings mapping-types})]))
+    [(esi/delete conn index)
+    (esi/create conn index {:mappings mapping-types})]))
 
 ;;TODO can we create two same docs? test it
-(defn put-doc! [conn indx ttype doc]
+(defn put-doc![conn indx ttype doc]
   (esd/put conn indx ttype (:id doc) doc)) ;;TODO can we create two same docs? test it
 
 
 ;;
 ;; Twiki
 ;;
-(defn twiki-upload-index! [conn [path indx ttype]]
+(defn twiki-scan![{:keys [index kind]} conn {:keys [path]}]
   (->>
    path
    t/find-topics
    (remove nil?)
    (map t/read-topic!)
    (map t/parse-topic)
-   (map (partial put-doc! conn indx ttype))
+   (map print-and-pass)
+   (map (partial put-doc! conn index kind))
    (map :created)
    frequencies))
 
 ;;
 ;; Email
 ;;
-(defn index-mbox! [indx ttype path conn]
+(defn mbox-scan![conn {:keys [path]} {:keys [index kind]}]
   (->>
    path
    m/process-mbox
    (map m/format-mbox)
-   (map (partial put-doc! conn indx ttype))
+   (map (partial put-doc! conn index kind))
    (map :created)
    frequencies))
 
 ;;
 ;; Confluence
 ;;
+(defn confluence-scan-2cache![{:keys []} {:keys [path]} api]
+  (->>
+   api
+   c/find-spaces
+   (map (partial c/save-space-from-search api (str path "/" db-ini)))
+   doall))
 
-(defn confluence-upload-cache![api [path]]
-  (->> api c/find-spaces (map (partial c/save-space-from-search api (str path "/" db-ini))) doall))
-
-(defn confluence-update-cache![api [path]]
+(defn confluence-update-cache![{:keys [index kind url instance]} api [path]]
   (c/pull-confl-incr api (str path "/" db-inc)))
 
-(defn confluence-upload-index![conn [path indx ttype base-url instance-name]]
+(defn confluence-scan-2index![{:keys [index kind url instance]} conn {:keys [path]}]
   (->>
    [db-ini (str db-inc "/" db-inc-pro)] ;;order is essential for below sort to work
    (map (partial str path "/"))
    (map c/find-pages)
    (mapcat sort) ;;sort to make sure we update from oldest to newest (only for incremental scan) - never remove it
-   (map (partial c/read-page! base-url instance-name))
+   (map (partial c/read-page! url instance))
    (map c/parse-page)
-   (map (partial put-doc! conn indx ttype))
+   (map print-and-pass)
+   (map (partial put-doc! conn index kind))
    (map :created)
    frequencies))
 
-(defn confluence-update-index! [conn [path indx ttype base-url instance-name]]
+(defn confluence-update-index![conn [path indx ttype base-url instance-name]]
   #_{:file "2017-04-10_15:50", :path+file "db/ppconf/incremental-scans/2017-04-10_15:50"}
   (letfn [(update-fn [args]
             (println "incremental indexing " (:file args))

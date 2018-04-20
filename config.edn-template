@@ -1,31 +1,35 @@
 ;; All config is by convention
-;; Different types of profiles reside on the same level
+;; Different types of configuration reside on the same level
 ;; Not all combinations are valid
 ;; Not all fields are always required
-
 {
- ;; Confluence Profiles
- :cop-pp-prod {
-              :url "*"
-              :basic-auth ["*" "*"]
-              }
- :cop-xm-prod {
-              :url "*"
-              :api-cookie "*"
-              }
+;;Context
 
- ;; ES Profiles
- :esp-prod {
-           :host "*"
-           :basic-auth ["*" "*"]
-           }
+;;Sources
 
- :esp-local {
-            :host "http://127.0.0.1:9200"
-            :basic-auth ["" ""]
-            }
+ ;;-ElasticSearch
+ :elasticsearch-prod {
+                      :kind "elasticsearch"
+                      :host "http://*"
+                      :basic-auth ["*" "*"]
+                      }
 
-;; Search Profiles ([path-to-db index-name type-name base-url instance-name])
- :sp-twiki ["db/twiki" "pp-twiki" "twiki"]
- :sp-demo-conf ["db/ppconf" "demo`-conf" "confluence" "https://*/confluence" "PP"]
+ :elasticsearch-local {
+                       :kind "elasticsearch"
+                       :host "http://127.0.0.1:9200"
+                       :basic-auth ["" ""]
+                       }
+
+ ;;-Cache
+ :confluence-pp-cache {
+                       :kind "cache"
+                       :path "db/ppconf"
+                       }
+
+ ;;-DataHub
+ :datahub-prod {
+                :kind "datahub"
+                :host "https://*"
+                :basic-auth ["*" "*"]
+                }
  }

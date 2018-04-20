@@ -1,5 +1,5 @@
 ;;TODO move to LIB
-(ns seazme.sources.api
+(ns seazme.sources.confluence-api
   (:require [clj-http.client :as c]
             [clojure.data.json :as json]))
 

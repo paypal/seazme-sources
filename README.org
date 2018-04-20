@@ -18,14 +18,10 @@ After making sure that software from Prerequisites is installed, clone this repo
 
 Examples:
 #+BEGIN_EXAMPLE
-$ ./data-miner  -a reinit-index -s sp-twiki -e esp-local
-
-$ ./data-miner -d conf -a upload-index -s sp-xm-conf -e esp-local
-$ ls db/ppconf/incremental-scans/
-$ ./data-miner -d conf -a update-cache -s sp-pp-conf -c cop-pp-prod
-$ ls db/ppconf/incremental-scans/
-$ ./data-miner -d conf -a update-index -s sp-pp-conf -e esp-local
-$ ls db/ppconf/incremental-scans/
+./data-miner -a reinit -c context-pp-twiki -d elasticsearch-prod
+./data-miner -a scan -c context-pp-twiki -d elasticsearch-prod -s twiki-pp-prod
+./data-miner -a scan -c context-pp-confluence -d confluence-pp-cache -s confluence-pp-prod
+./data-miner -a scan -c context-pp-confluence -d elasticsearch-prod -s confluence-pp-cache
 #+END_EXAMPLE
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.

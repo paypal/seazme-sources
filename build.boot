@@ -9,7 +9,7 @@
                  [ch.qos.logback/logback-classic "1.1.1"]
                  [clj-http "2.0.1"]
                  [clj-time "0.11.0"]
-                 [clojurewerkz/elastisch "3.0.0-beta2"]
+                 [clojurewerkz/elastisch "3.0.0"]
                  [clucy "0.4.0"]
                  [digest "1.4.4"]
                  [environ "1.0.2"]
@@ -22,30 +22,34 @@
 
 (require '[boot.cli :as cli]
          '[clojure.core.match :refer [match]]
-         '[seazme.sources.config :as config])
-
-(use 'seazme.sources.es)
+         '[seazme.sources.config :as config]
+         '[seazme.sources.es :as es]
+         '[seazme.sources.datahub :as dh])
 
 (cli/defclifn -main
   "Executes data miner for Confluence, Twiki, mbox, etc based on options and configuration defined in config.edn. Depending on a context, only some combinations of options and configuration are valid."
-  [d data-source VALUE str "data source: twiki, conf, mbox"
-   a action VALUE str "action: reinit-index, upload-index, update-index, upload-cache, update-cache"
-   s search-profile VALUE kw "search profile name"
-   c conf-profile VALUE kw "confluence profile name"
-   e es-profile VALUE kw "elastic search profile name"]
-  (let [d data-source
-        a action
-        s (config/config search-profile)
-        c (config/config conf-profile)
-        e (config/config es-profile)]
-    (println (match [d a s c e]
-                    [(d :guard nil?) "reinit-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (reinit-index! (mk-es-connection e) s)
-                    ["conf"          "upload-cache" (s :guard some?) (c :guard some?) (e :guard nil?)]  (confluence-upload-cache! (mk-conf-api c) s)
-                    ["conf"          "update-cache" (s :guard some?) (c :guard some?) (e :guard nil?)]  (confluence-update-cache! (mk-conf-api c) s)
-                    ["conf"          "upload-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (confluence-upload-index! (mk-es-connection e) s)
-                    ["conf"          "update-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (confluence-update-index! (mk-es-connection e) s)
-                    ["twiki"         "upload-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (twiki-upload-index! (mk-es-connection e) s)
-                    ["mbox"          "upload-index" (s :guard some?) (c :guard nil?)  (e :guard some?)] (prn "WIP")
+  [a action VALUE str "action: reinit, scan, update"
+   c context VALUE kw "kw"
+   d destination VALUE kw "destination name"
+   s source VALUE kw "source  name"]
+  (let [a action
+        c (config/config context)
+        d (config/config destination)
+        s (config/config source)]
+    (println (match [a c d s]
+                    ;;main dispatch, it is not perfect and there might be some corner cases when config is bad
+                    ;;TODO make it very type aware and validate everything
+                    ;;ElasticSearch
+                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (es/reinit! c (es/mk-es-connection d))
+
+                    ;;ElasticSearch
+                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (es/twiki-scan! c (es/mk-es-connection d) s)
+                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (es/confluence-scan-2cache! c d (es/mk-conf-api s))
+                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-scan-2index! c (es/mk-es-connection d) s)
+                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (es/confluence-update-cache! c d (es/mk-conf-api s))
+                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-update-index! c (es/mk-es-connection d) s)
+
+                    ;;DataHub
                     :else "options and/or config mismatch"))))
 
 ;;TODO fix docs
