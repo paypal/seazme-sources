@@ -24,6 +24,7 @@
                  [cbass "0.1.5"]
                  [com.grammarly/perseverance "0.1.2"]
                  [org.apache.hadoop/hadoop-common "2.6.0"] [com.google.guava/guava "15.0"]
+                 [com.sun.mail/javax.mail "1.5.5"]
                  ]
  :resource-paths #{"resources"}
  :source-paths   #{"src/main/clojure"})
@@ -33,14 +34,10 @@
          '[seazme.common.config :as config]
          '[seazme.sources.es :as es]
          '[seazme.sources.datahub :as dh]
-         '[seazme.sources.es2 :as es2])
+         '[seazme.sources.es2 :as es2]
+         '[clojure.tools.logging :as log])
 
-(cli/defclifn -main
-  "Executes data miner for Confluence, Twiki, mbox, etc based on options and configuration defined in config.edn. Depending on a context, only some combinations of options and configuration are valid."
-  [a action VALUE str "action: reinit, scan, update"
-   c context VALUE kw "kw"
-   d destination VALUE kw "destination name"
-   s source VALUE kw "source  name"]
+(defn- run-main[action context destination source]
   (let [a action
         c (config/config context)
         d (config/config destination)
@@ -71,6 +68,18 @@
                     ;;HBASE (reusing context, need args)
                     ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (es2/hbase-update! c (es/mk-es-connection d))
                     :else "options and/or config mismatch"))))
+
+(cli/defclifn -main
+  "Executes data miner for Confluence, Twiki, mbox, etc based on options and configuration defined in config.edn. Depending on a context, only some combinations of options and configuration are valid."
+  [a action VALUE str "action: reinit, scan, update"
+   c context VALUE kw "kw"
+   d destination VALUE kw "destination name"
+   s source VALUE kw "source  name"]
+  (try
+    (run-main action context destination source)
+    (catch Exception ex (do
+                          (prn ex "-main failed to execute")
+                          (log/error ex "-main failed to execute")))))
 
 ;;TODO fix docs
 (deftask build

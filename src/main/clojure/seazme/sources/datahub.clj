@@ -7,7 +7,8 @@
    [seazme.sources.jira-api :as jira-api]
    [seazme.sources.jira :as j]
    [seazme.sources.snow :as s]
-   [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te])
+   [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
+   [clojure.tools.logging :as log])
   (:use seazme.sources.common))
 
 
