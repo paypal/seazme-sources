@@ -123,7 +123,7 @@
 ;; JIRA
 ;;
 (defn jira-scan![context d s]
-  #_(prn "DEBUG" index kind d s)
+  #_(prn "DEBUG" context d s)
   (make-sure)
   (let [{:keys [app-id index kind]} context
         pf (get d :parallel-factor 1)
@@ -141,21 +141,24 @@
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
     (prn "SUCCEEDED" ret1 ret2)
     ))
-(defn jira-update![context d s]
-  #_(prn "DEBUG" index kind d s)
+(defn jira-update![context d s continue]
+  #_(prn "DEBUG" context d s continue)
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
-        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA update&command=update" app-id) nil)]
-    (if (= 200 status)
-      (let [session-id (:key body)
-            {{:keys [from to]} :range} body
-            [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
-            pja-search (jira-api/mk-pja-search (:url s) (:credentials s))
-            ret1 (j/upload-period context (:cache s) false pja-search cb (list from to))
-            ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-        (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2))
-      (prn "FAILED" status body)
-      )))
+        pja-search (jira-api/mk-pja-search (:url s) (:credentials s))]
+    (loop [limit 5]
+      (when (pos? limit)
+          (let [{:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA update&command=update" app-id) nil)]
+            (condp = status
+              200 (let [session-id (:key body)
+                        {{:keys [from to]} :range} body
+                        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+                        ret1 (j/upload-period context (:cache s) false pja-search cb (list from to))
+                        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
+                    (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
+                    (when continue (recur (dec limit))))
+              202 (prn "FINISHED" status body)
+              (log/error "FAILED" status body)))))))
 
 (defn jira-scan-to-cache![context s]
   #_(prn "DEBUG" context s)
