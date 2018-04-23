@@ -37,11 +37,12 @@
          '[seazme.sources.es2 :as es2]
          '[clojure.tools.logging :as log])
 
-(defn- run-main[action context destination source]
+(defn- run-main[action context destination source continue]
   (let [a action
         c (config/config context)
         d (config/config destination)
-        s (config/config source)]
+        s (config/config source)
+        o continue]
     (println (match [a c d s]
                     ;;main dispatch, it is not perfect and there might be some corner cases when config is bad
                     ;;TODO make it very type aware and validate everything
@@ -74,9 +75,10 @@
   [a action VALUE str "action: reinit, scan, update"
    c context VALUE kw "kw"
    d destination VALUE kw "destination name"
-   s source VALUE kw "source  name"]
+   s source VALUE kw "source  name"
+   o continue bool "indicates if update shall continue until DataHub returns 202 (no more data to pull)"]
   (try
-    (run-main action context destination source)
+    (run-main action context destination source continue)
     (catch Exception ex (do
                           (prn ex "-main failed to execute")
                           (log/error ex "-main failed to execute")))))
