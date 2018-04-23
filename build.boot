@@ -62,7 +62,7 @@
                     ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-scan! c d (es/mk-conf-api s));;TODO /es/ replace
                     ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-update! c d (es/mk-conf-api s) o);;TODO /es/ replace
                     ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-scan! c d s)
-                    ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-update! c d s)
+                    ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-update! c d s o)
                     ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache! c s)
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}]       (dh/snow-scan! c d s)
 
