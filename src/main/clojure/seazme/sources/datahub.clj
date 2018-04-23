@@ -101,19 +101,22 @@
     (prn "SUCCEEDED" ret1 ret2)
     )
   )
-(defn confluence-update![{:keys [app-id index kind]} d s]
-  #_(prn "DEBUG" index kind d s)
-  (let [p (mk-datahub-post-api d)
-        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=Confluence update&command=update" app-id) nil)]
-    (if (= 200 status)
-      (let [session-id (:key body)
-            {{:keys [from to]} :range} body
-            [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
-            ret1 (->> (c/pull-confl-incr2 s cb from to) frequencies)
-            ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-        (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2))
-      (prn "FAILED" status body)
-      )))
+(defn confluence-update![{:keys [app-id index kind]} d s continue]
+  #_(prn "DEBUG" index kind d s continue)
+  (let [p (mk-datahub-post-api d)]
+    (loop [limit 5]
+      (when (pos? limit)
+        (let [{:keys [body status]} (p (format "intake-sessions?app-id=%s&description=Confluence update&command=update" app-id) nil)]
+          (condp = status
+            200 (let [session-id (:key body)
+                      {{:keys [from to]} :range} body
+                      [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+                      ret1 (->> (c/pull-confl-incr2 s cb from to) frequencies)
+                      ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
+                  (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
+                  (when continue (recur (dec limit))))
+            202 (prn "FINISHED" status body)
+            (log/error "FAILED" status body)))))))
 
 ;;
 ;; JIRA
