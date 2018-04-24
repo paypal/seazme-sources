@@ -75,13 +75,6 @@
                       :api-cookie "*"
                       }
 
- ;;-DataHub
- :datahub-prod {
-                :kind "datahub"
-                :host "https://*"
-                :basic-auth ["*" "*"]
-                }
-
  ;;-JIRA
  :jira-prod {
              :kind "jira"
@@ -95,6 +88,15 @@
              :kind "snow"
              :basic-auth ["*" "*"]
              }
+
+ ;;-DataHub
+ :datahub-prod {
+                :kind "datahub"
+                :host "https://*"
+                :basic-auth ["*" "*"]
+                :parallel-factor 1
+                }
+
  ;;-Hadoop (currently one hardcoded backend is supported)
  :hbase {
          :kind "hbase"
