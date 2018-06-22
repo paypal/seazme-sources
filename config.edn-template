@@ -36,6 +36,13 @@
                          :instance "DEMO"
                          :app-id ""
                          }
+ :context-demo-circlehd {
+                         :kind "circlehd"
+                         :index "demo-chd"
+                         :instance "DEMO"
+                         :base-url "https://circlehd"
+                         :app-id ""
+                         }
 
  ;;Sources
  ;;-Twiki (must be run on the same FS)
