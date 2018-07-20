@@ -16,7 +16,7 @@
   ;;TODO add timer for heart beat and remove session
   ;;cannot use {:basic-auth acct} - due to way JIRA handles sessions
   [op re-auth-f jira-url-base credens timeout]
-  (let [default-params {:insecure? true :socket-timeout timeout :conn-timeout timeout}
+  (let [default-params {:save-request? true :debug-body true :debug true :insecure? true :socket-timeout timeout :conn-timeout timeout}
         session-cooookie (atom nil)
         opf (op api-map);;TODO remove SESSION header
         auth-f #(let [res (c/post (str jira-url-base "/auth/1/session") (assoc default-params :content-type :json :body (json/write-str credens)))
@@ -70,6 +70,7 @@
     (loop [res []
            startAt 0]
       (let [r (f (assoc req :startAt startAt))
+            _ (prn "DEBUG" r)
             rr (json/read-str (:body r) :key-fn keyword)]
         (if (> startAt (:total rr))
           res
@@ -82,6 +83,7 @@
     (loop [res []
            startAt 0]
       (let [r (f (assoc req :startAt startAt))
+            _ (prn "DEBUG" r)
             rr (json/read-str (:body r) :key-fn keyword)
             #_ (prn "YYY" startAt (:total rr))
             issues (:issues rr)
