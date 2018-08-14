@@ -29,6 +29,8 @@ Examples:
 ./data-miner -a update -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
 
 ./data-miner -a update -c context-hbase -d elasticsearch-prod
+./data-miner -a update -c context-hbase
+
 #+END_EXAMPLE
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.

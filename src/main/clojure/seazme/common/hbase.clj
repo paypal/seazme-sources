@@ -79,6 +79,9 @@
 (defn store1* [table row-key family columns] (store (get-conn) table (name row-key) (name family) columns))
 (defn store* [& args] (p/retry {} (p/retriable {:catch [Exception] :ex-wrapper ex-wrapper} (apply store1* args))))
 
+(defn store1** [table row-key family columns] (store (get-conn) table row-key family columns))
+(defn store** [& args] (p/retry {} (p/retriable {:catch [Exception] :ex-wrapper ex-wrapper} (apply store1** args))))
+
 (defn find-by1* [table row-key family] (find-by (get-conn) table (name row-key) (name family)))
 (defn find-by* [& args] (p/retry {} (p/retriable {:catch [Exception] :ex-wrapper ex-wrapper} (apply find-by1* args))))
 

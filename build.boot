@@ -38,6 +38,7 @@
          '[seazme.sources.direct2es :as d2e]
          '[seazme.sources.datahub :as dh]
          '[seazme.sources.hbase2es :as h2e]
+         '[seazme.sources.snapshot :as ss]
          '[clojure.tools.logging :as log])
 
 (defn- run-main[action context destination source continue]
@@ -71,6 +72,7 @@
 
                     ;;HBASE (reusing context, need args)
                     ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (h2e/process-sessions! c (es/mk-connection d))
+                    ["update" {:kind "hbase"}      (d :guard nil?)          _]      (ss/process-sessions! c)
                     :else "options and/or config mismatch"))))
 
 (cli/defclifn -main
