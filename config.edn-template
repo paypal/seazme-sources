@@ -8,6 +8,10 @@
                          :kind "hbase"
                          :prefix "test"
                          }
+ :context-hbase-snapshot {
+                         :kind "hbase"
+                         :prefix "snap"
+                         }
 
  :context-demo-twiki      {
                          :kind "twiki"

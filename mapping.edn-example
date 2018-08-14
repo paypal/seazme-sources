@@ -1,0 +1,29 @@
+{
+ {:self :restURL} []
+ {:key :JiraId} []
+ :fields {
+          {:issuelinks :issueLinksJiraId} [:inwardIssue :key]
+          {:issuelinks :issueLinksInward} [:type :inward]
+          {:customfield_11111 :severity} []
+          :labels []
+          :updated []
+          {:reporter :reporterId} [:name]
+          {:reporter :reporterName} [:displayName]
+          {:customfield_11112 :custom11112} [:value]
+          :priority [:name]
+          :created []
+          :status [:name]
+          :components [:name]
+          {:project :projectID} [:key] ;;"name :projectName"
+          :summary []
+          :comment {:comments [:body]}
+          :resolution [:name]
+          :issuetype [:name]
+          :description []
+          :fixVersions [:name]
+          :duedate []
+          {:creator :creatorId} [:name]
+          {:creator :creatorName} [:displayName]
+          :resolutiondate []
+          }
+ }
