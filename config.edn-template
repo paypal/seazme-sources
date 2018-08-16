@@ -11,7 +11,7 @@
 
  :context-demo-twiki      {
                          :kind "twiki"
-                         :index "demo-twiki" ; needed by reinit and direct ES
+                         ;;:index "demo-twiki" ; optional, needed by direct2es only
                          :instance "DEMO"
                          :base-url "https://.../wiki"
                                         ;apiurl vs deeplink url
@@ -19,26 +19,26 @@
                          }
  :context-demo-confluence {
                          :kind "confluence"
-                         :index "demo-conf"
+                         ;;:index "demo-conf"
                          :instance "DEMO"
                          :base-url "https://*/confluence"
                          :app-id ""
                          }
-:context-demo-jira       {
+ :context-demo-jira       {
                          :kind "jira"
-                         :index "demo-jira"
+                         ;;:index "demo-jira"
                          :instance "DEMO"
                          :app-id ""
                          }
  :context-demo-snow       {
                          :kind "snow"
-                         :index "demo-snow"
+                         ;;:index "demo-snow"
                          :instance "DEMO"
                          :app-id ""
                          }
  :context-demo-circlehd {
                          :kind "circlehd"
-                         :index "demo-chd"
+                         ;;:index "demo-chd"
                          :instance "DEMO"
                          :base-url "https://circlehd"
                          :app-id ""

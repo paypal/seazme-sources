@@ -1,6 +1,5 @@
 (ns seazme.sources.common
-  (:require [seazme.common.hbase :as hb]
-            [seazme.sources.twiki :as t]
+  (:require [seazme.sources.twiki :as t]
             [seazme.sources.confluence :as c]
             [seazme.sources.jira :as j]
             [seazme.sources.circlehd :as chd]))
@@ -11,3 +10,5 @@
    "jira" j/parse-ticket
    "circlehd" chd/parse-mediameta
    })
+
+;;TODO - ensure throw&exit if no conversion
