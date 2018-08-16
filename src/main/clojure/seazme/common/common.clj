@@ -8,6 +8,6 @@
 (defn to-edn [f d] (spit f (pr-str d)))
 (defn from-edn [f] (read-string (slurp f)))
 
-(defn pmapr[r f coll] (->> coll (partition-all r) (mapcat #(->> % (pmap f) doall))))
+(defn pmapr[r f coll] (->> coll (partition-all r) (mapcat #(->> % (pmap f) doall)))) ;;TODO make it lazy no doall
 
 (defn jts-now[] (te/to-long (tr/now)))

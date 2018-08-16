@@ -36,7 +36,7 @@
          '[seazme.common.config :as config]
          '[seazme.sources.es :as es]
          '[seazme.sources.datahub :as dh]
-         '[seazme.sources.es2 :as es2]
+         '[seazme.sources.hbase2es :as h2e]
          '[clojure.tools.logging :as log])
 
 (defn- run-main[action context destination source continue]
@@ -69,7 +69,7 @@
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}]       (dh/snow-scan! c d s)
 
                     ;;HBASE (reusing context, need args)
-                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (es2/hbase-update! c (es/mk-es-connection d))
+                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (h2e/process-sessions! c (es/mk-connection d))
                     :else "options and/or config mismatch"))))
 
 (cli/defclifn -main
