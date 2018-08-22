@@ -1,10 +1,11 @@
 (ns seazme.sources.common
-  (:import [org.jsoup Jsoup]))
+  (:require [seazme.common.hbase :as hb]
+            [seazme.sources.twiki :as t]
+            [seazme.sources.confluence :as c]
+            [seazme.sources.jira :as j]))
 
-(defn strip-html-tags [s] (.text (Jsoup/parse s)))
-
-(defn file-exists [f])
-(defn to-edn [f d] (spit f (pr-str d)))
-(defn from-edn [f] (read-string (slurp f)))
-
-(defn pmapr[r f coll] (->> coll (partition-all r) (mapcat #(->> % (pmap f) doall))))
+(def kind2parse
+  {"twiki" t/parse-topic
+   "confluence" c/parse-page
+   "jira" j/parse-ticket
+   })

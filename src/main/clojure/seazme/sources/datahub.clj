@@ -9,7 +9,7 @@
    [seazme.sources.snow :as s]
    [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te]
    [clojure.tools.logging :as log])
-  (:use seazme.sources.common))
+  (:use seazme.common.common))
 
 
 ;;TODO replace conf->confluence everywhere
