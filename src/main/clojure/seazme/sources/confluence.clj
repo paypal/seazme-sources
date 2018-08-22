@@ -4,7 +4,7 @@
    [clj-time.coerce :as tr]
    [clj-time.format :as tf]
    [clojure.java.io :refer [file]])
-  (:use seazme.sources.confluence-api seazme.sources.scheduler seazme.sources.common))
+  (:use seazme.sources.confluence-api seazme.sources.scheduler seazme.common.common))
 
 
 (def confluence-type-name "confluence");;TODO this or rahter kind inall

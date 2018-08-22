@@ -1,7 +1,7 @@
 (ns seazme.sources.twiki
   (:require
    [clojure.data.json :as json])
-  (:use seazme.sources.common))
+  (:use seazme.common.common))
 
 (def topic-info-regex #"%META:TOPICINFO\{((?:\w+=\"[^\"]+\"\s*)+)\}%\n")
 (def topic-parent-regex #"%META:TOPICPARENT\{((?:\w+=\"[^\"]+\"\s*)+)\}%\n")
