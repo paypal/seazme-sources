@@ -25,6 +25,8 @@
                  [com.grammarly/perseverance "0.1.2"]
                  [org.apache.hadoop/hadoop-common "2.6.0"] [com.google.guava/guava "15.0"]
                  [com.sun.mail/javax.mail "1.5.5"]
+                 [com.draines/postal "1.11.3"]
+                 [hiccup "1.0.5"]
                  ]
  :resource-paths #{"resources"}
  :source-paths   #{"src/main/clojure"})

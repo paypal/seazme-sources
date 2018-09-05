@@ -119,4 +119,5 @@
                     :user "<username>@<host>.COM" :path "username.keytab"
                     }
          }
+ :mta "smpt.domain.com"
  }
