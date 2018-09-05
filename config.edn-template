@@ -119,4 +119,11 @@
                     :user "<username>@<host>.COM" :path "username.keytab"
                     }
          }
+
+ :notif {
+         :host "smtp.domain.com"
+         :port 25
+         :from "noreply-seazme@domain.com"
+         :to ["to@domain.com"]
+         }
  }
