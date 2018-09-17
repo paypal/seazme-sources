@@ -1,4 +1,4 @@
-(ns seazme.sources.es
+(ns seazme.sources.direct2es
   (:require
    [clojure.core.match :refer [match]]
    [seazme.sources.twiki :as t]
@@ -13,9 +13,6 @@
 (def db-ini "initial-scan")
 (def db-inc "incremental-scans")
 (def db-inc-pro "processed")
-
-(defn mk-es-connection[profile & {:keys [debug debug-body] :or {debug false debug-body false}}]
-  (esr/connect (profile :host) {:socket-timeout 60000 :conn-timeout 60000 :insecure? true :basic-auth (profile :basic-auth) :debug debug :debug-body debug-body}))
 
 (defn mk-conf-api[profile]
   (match [profile]
@@ -140,7 +137,5 @@
 
 ;;TODO
 ;; document junk-in garbage-out
-;; run by cron every 15 minutes
-;; do profiles vs individual settings
 ;; ERROR handling, confluence is down, session expires
 ;; make all pure functions, use ! if not possible
