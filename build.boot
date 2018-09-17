@@ -34,7 +34,8 @@
 (require '[boot.cli :as cli]
          '[clojure.core.match :refer [match]]
          '[seazme.common.config :as config]
-         '[seazme.sources.es :as es]
+         '[seazme.common.es :as es]
+         '[seazme.sources.direct2es :as d2e]
          '[seazme.sources.datahub :as dh]
          '[seazme.sources.hbase2es :as h2e]
          '[clojure.tools.logging :as log])
@@ -49,20 +50,20 @@
                     ;;main dispatch, it is not perfect and there might be some corner cases when config is bad
                     ;;TODO make it very type aware and validate everything
                     ;;ElasticSearch
-                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (es/reinit! c (es/mk-es-connection d))
-                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)]      (es/reinit-datasources! (es/mk-es-connection d))
+                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (d2e/reinit! c (es/mk-connection d))
+                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)]      (d2e/reinit-datasources! (es/mk-connection d))
 
                     ;;ElasticSearch (pre HBASE version, still works)
-                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (es/twiki-scan! c (es/mk-es-connection d) s)
-                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (es/confluence-scan-2cache! c d (es/mk-conf-api s))
-                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-scan-2index! c (es/mk-es-connection d) s)
-                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (es/confluence-update-cache! c d (es/mk-conf-api s))
-                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (es/confluence-update-index! c (es/mk-es-connection d) s)
+                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (d2e/twiki-scan! c (es/mk-connection d) s)
+                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (d2e/confluence-scan-2cache! c d (d2e/mk-conf-api s))
+                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (d2e/confluence-scan-2index! c (es/mk-connection d) s)
+                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (d2e/confluence-update-cache! c d (d2e/mk-conf-api s))
+                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (d2e/confluence-update-index! c (es/mk-connection d) s)
 
                     ;;DataHub
                     ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}]      (dh/twiki-scan! c d s)
-                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-scan! c d (es/mk-conf-api s));;TODO /es/ replace
-                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-update! c d (es/mk-conf-api s) o);;TODO /es/ replace
+                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-scan! c d (d2e/mk-conf-api s))
+                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-update! c d (d2e/mk-conf-api s) o)
                     ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-scan! c d s)
                     ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-update! c d s o)
                     ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache! c s)
