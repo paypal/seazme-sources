@@ -3,7 +3,6 @@
    [clj-time.format :as tf]
    [clj-time.coerce :as tr]
    [clj-time.core :as tc]
-   [clj-time.coerce :as co]
    [clojure.data.json :as json]
    [seazme.sources.jira-api :as jira-api]
    [me.raynes.fs :as fs]
@@ -29,7 +28,7 @@
    (range)
    (map date-since-first)
    (take-while #(tc/before? % newest-issue-DT))
-   (map #(co/to-long %))
+   (map #(tr/to-long %))
    (partition 2 1)
    #_butlast;;TODO this is necessary for full scan to have correct time range but .... also last has to be manually removed when running scan again
    ))
@@ -52,34 +51,42 @@
      :text text
      :text-size (inc (quot (count text) 1024))}))
 
-(defn- upload-period-full-stream[{:keys [kind instance index]} cached? skip-cache pja-search f period]
-  (let [period2 (map co/to-date-time period)
-        period3 (map (partial tf/unparse ff2) period2)
-        _ (print (str (tc/now)) "downloading JIRAs for:" period3 cached? kind instance index);;TODO unify ts in logs
+(defn period-search[pja-search-api period cb]
+  (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff2)))]
+    (jira-api/pja-search-full pja-search-api (apply format "updated >= '%s' and updated < '%s'" period2) cb)))
+
+(defn- upload-period-full-stream[{:keys [kind instance index]} cached? skip-cache pja-search-api callback-fn period]
+  (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
+        _ (print (str (tc/now)) "downloading JIRAs for:" period2 cached? kind instance index);;TODO unify ts in logs
         _ (flush)
         base-path (format "db/%s-cache/%s/%s" kind instance index)
         _ (fs/mkdirs base-path)
-        file-path (apply format "%s/%s-%s.edn.gz" base-path (map (partial tf/unparse ff3) period2))
-        future-file-path (str file-path ".future")]
+        file-path (apply format "%s/%s-%s.edn.gz" base-path period2)
+        future-file-path (str file-path ".future")
+        posting-fn #(println "posting:" (:key %) (:id %) (-> % :fields :updated))]
     (if (and cached? (fs/exists? file-path))
       (do
         (when-not skip-cache
-          (print  "... form cache")
+          (println  "... only form cache")
           (with-open [in (-> file-path io/input-stream java.util.zip.GZIPInputStream. io/reader java.io.PushbackReader.)]
-            (let [counter (atom 0)
-                  edn-seq (repeatedly (wrap-with-counter counter (partial edn/read {:eof nil} in)))]
-              (dorun (map f (take-while (partial not= nil) edn-seq)))
-              (print "... pulled" @counter)))))
+            (let[cb (combine-fun-calls posting-fn callback-fn)
+                 counter (atom 0)
+                 edn-seq (repeatedly (wrap-with-counter counter (partial edn/read {:eof nil} in)))]
+              (dorun (map callback-fn (take-while (partial not= nil) edn-seq)))
+              (print "pulled" @counter)))))
       (if cached?
         (do
+          (println  "... and cache")
           (with-open [w (-> future-file-path io/output-stream java.util.zip.GZIPOutputStream. io/writer)]
-            (let [cb (combine-fun-calls (partial write-to-stream w) f)
-                  jira-ids (jira-api/pja-search-full2 pja-search (apply format "updated >= '%s' and updated < '%s'" period3) cb)]
-              (print "... pulled" (count jira-ids))))
+            (let [cb (combine-fun-calls (partial write-to-stream w) posting-fn callback-fn)
+                  cnt (count (period-search pja-search-api period cb))]
+              (print "pulled" cnt)))
           (fs/rename (fs/file future-file-path) (fs/file file-path)))
         (do
-          (let [jira-ids (jira-api/pja-search-full2 pja-search (apply format "updated >= '%s' and updated < '%s'" period3) f)]
-            (print "... pulled" (count jira-ids))))))
+          (println  "... no cache")
+          (let [cb (combine-fun-calls posting-fn callback-fn)
+                cnt (count (period-search pja-search-api period cb))]
+            (print "pulled" cnt)))))
     (println "... done"))
   )
 (def upload-period upload-period-full-stream)
@@ -111,45 +118,43 @@
           (fs/rename (fs/file tmp-dfn) (fs/file dfn))
           (println "converted:" dfn)))))
 
-  (defn upload-period-2apicall[{:keys [kind instance index]} cached? pja-search pja-issue-full f period]
-    (let [period2 (map co/to-date-time period)
-          period3 (map (partial tf/unparse ff2) period2)
-          _ (print "downloading JIRAs for:" period3 cached? kind instance index)
+  (defn upload-period-2apicall[{:keys [kind instance index]} cached? pja-search-api pja-issue-full f period]
+    (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
+          _ (print "downloading JIRAs for:" period2 cached? kind instance index)
           _ (flush)
           base-path (format "db/%s-cache/%s/%s" kind instance index)
           _ (fs/mkdirs base-path)
-          file-path (apply format "%s/%s-%s.edn" base-path (map (partial tf/unparse ff3) period2))
+          file-path (apply format "%s/%s-%s.edn" base-path period2)
           jiras (if (and cached? (fs/exists? (str file-path ".gz")))
                   (do
                     (print  "... form cache")
                     (uncompress! file-path))
-                  (let [jira-ids (jira-api/pja-search pja-search (apply format "updated >= '%s' and updated < '%s'" period3))
+                  (let [jiras1 (jira-api/pja-search pja-search-api (apply format "updated >= '%s' and updated < '%s'" period3) identity);;this needs to be fixed, if used in future at all
                         process-jira (fn [i] (-> i :id pja-issue-full :body (json/read-str :key-fn keyword)))
-                        jiras (map process-jira jira-ids)]
+                        jiras2 (map process-jira jiras1)]
                     (when cached?
                       (print  "... writing")
-                      (compress! file-path jiras))
+                      (compress! file-path jiras2))
                     jiras))
-          _ (println "... pulled" (count jiras))]
+          _ (println "... pulled" (count jiras2))]
       (->> jiras
            (map f) doall)
       ))
 
-  (defn upload-period-1apicall-inmem[{:keys [kind instance index]} cached? skip-cache pja-search f period]
+  (defn upload-period-1apicall-inmem[{:keys [kind instance index]} cached? skip-cache pja-search-api f period]
     (try
-      (let [period2 (map co/to-date-time period)
-            period3 (map (partial tf/unparse ff2) period2)
-            _ (print "downloading JIRAs for:" period3 cached? kind instance index)
+      (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
+            _ (print "downloading JIRAs for:" period2 cached? kind instance index)
             _ (flush)
             base-path (format "db/%s-cache/%s/%s" kind instance index)
             _ (fs/mkdirs base-path)
-            file-path (apply format "%s/%s-%s.edn" base-path (map (partial tf/unparse ff3) period2))
+            file-path (apply format "%s/%s-%s.edn" base-path period2)
             jiras (if (and cached? (fs/exists? (str file-path ".gz")))
                     (do
                       (print  "... form cache")
                       (when-not skip-cache
                         (uncompress! file-path)))
-                    (let [jiras (jira-api/pja-search-full pja-search (apply format "updated >= '%s' and updated < '%s'" period3))]
+                    (let [jiras (period-search pja-search-api period identity)]
                       (when cached?
                         (print  "... writing")
                         (compress! file-path jiras))
@@ -164,15 +169,14 @@
     )
 
 
-  (defn upload-period-1apicall-partially-stream[{:keys [kind instance index]} cached? skip-cache pja-search f period]
+  (defn upload-period-1apicall-partially-stream[{:keys [kind instance index]} cached? skip-cache pja-search-api f period]
   (try
-    (let [period2 (map co/to-date-time period)
-          period3 (map (partial tf/unparse ff2) period2)
-          _ (print "downloading JIRAs for:" period3 cached? kind instance index)
+    (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
+          _ (print "downloading JIRAs for:" period2 cached? kind instance index)
           _ (flush)
           base-path (format "db/%s-cache/%s/%s" kind instance index)
           _ (fs/mkdirs base-path)
-          file-path (apply format "%s/%s-%s.edn.gz" base-path (map (partial tf/unparse ff3) period2))]
+          file-path (apply format "%s/%s-%s.edn.gz" base-path period2)]
       (if (and cached? (fs/exists? file-path))
         (do
           (when-not skip-cache
@@ -183,7 +187,7 @@
                 (dorun (map f (take-while (partial not= nil) edn-seq)))
                 (print "... pulled" @counter)))))
         (do
-          (let [jiras (jira-api/pja-search-full pja-search (apply format "updated >= '%s' and updated < '%s'" period3))]
+          (let [jiras (period-search pja-search-api period identity)]
             (when cached?
               (print  "... writing")
               (with-open [w (-> file-path io/output-stream java.util.zip.GZIPOutputStream. io/writer)]

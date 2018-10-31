@@ -129,12 +129,12 @@
         p (mk-datahub-post-api d)
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA full scan&command=scan" app-id) nil)
         session-id (:key body)
-        pja-search (jira-api/mk-pja-search (:url s) (:credentials s))
+        pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
         [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
         ret1 (->>
               (j/find-periods)
               #_(take-last 1)
-              (pmapr pf (partial j/upload-period context (:cache s) false pja-search cb))
+              (pmapr pf (partial j/upload-period context (:cache s) false pja-search-api cb))
               flatten
               frequencies)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
@@ -144,7 +144,7 @@
   #_(prn "DEBUG" context d s continue)
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
-        pja-search (jira-api/mk-pja-search (:url s) (:credentials s))]
+        pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
     (loop [limit 5]
       (when (pos? limit)
           (let [{:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA update&command=update" app-id) nil)]
@@ -152,7 +152,7 @@
               200 (let [session-id (:key body)
                         {{:keys [from to]} :range} body
                         [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
-                        ret1 (j/upload-period context (:cache s) false pja-search cb (list from to))
+                        ret1 (j/upload-period context (:cache s) false pja-search-api cb (list from to))
                         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
                     (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
                     (when continue (recur (dec limit))))
@@ -162,11 +162,11 @@
 (defn jira-scan-to-cache![context s]
   #_(prn "DEBUG" context s)
   (make-sure)
-  (let [pja-search (jira-api/mk-pja-search (:url s) (:credentials s))]
+  (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
     (->>
      (j/find-periods)
      #_(take-last 1)
-     (map (partial j/upload-period context true true pja-search (constantly "done")))
+     (map (partial j/upload-period context true true pja-search-api (constantly "done")))
      flatten
      frequencies)
     ))

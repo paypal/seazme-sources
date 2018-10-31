@@ -95,6 +95,13 @@
              :cache true
              :url "https://*/jira/rest"
              }
+:jira-test {
+             :kind "jira"
+             :credentials ["*" "*"]
+             :cache true
+             :url "https://*/jira/rest"
+             :debug true
+             }
 
  ;;-SNOW
  :snow-prod {
