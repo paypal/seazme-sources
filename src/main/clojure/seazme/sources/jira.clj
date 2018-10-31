@@ -194,6 +194,14 @@
     (catch Exception e (do (prn "ERROR" period e) []))
     ))
 
+
+  (defn- wrap-with-counter[counter f] (fn[& args] (swap! counter inc) (apply f args)))
+  (defn map-gzip-edn-steam[file-path fn]
+    (with-open [in (-> file-path clojure.java.io/input-stream java.util.zip.GZIPInputStream. clojure.java.io/reader java.io.PushbackReader.)]
+      (let [counter (atom 0)
+            edn-seq (repeatedly (wrap-with-counter counter (partial clojure.edn/read {:eof nil} in)))
+            r (doall (map fn (take-while (partial not= nil) edn-seq)))]
+        (print "... pulled" @counter) r)))
   )
 
 ;;TODO
