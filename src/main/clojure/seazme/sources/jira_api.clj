@@ -70,7 +70,7 @@
     (:issues rr)))
 
 (defn pja-search [f jql {:keys [fields expand] :or {fields ["dummy"] expand nil}} cb]
-  (let [step 256
+  (let [step 100
         req (remove-nilvals {:jql jql :fields fields :expand expand :maxResults step})
         debug (f)]
     (loop [res []
