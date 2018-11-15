@@ -53,7 +53,7 @@
 
 (defn period-search[pja-search-api period cb]
   (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff2)))]
-    (jira-api/pja-search-full pja-search-api (apply format "updated >= '%s' and updated < '%s'" period2) cb)))
+    (jira-api/pja-search-full pja-search-api (apply format "updated >= '%s' and updated < '%s' ORDER BY updated ASC" period2) cb)))
 
 (defn- upload-period-full-stream[{:keys [kind instance index]} cached? skip-cache pja-search-api callback-fn period]
   (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))

@@ -85,7 +85,7 @@
         (assert (<= total (+ new-total 100)) (str "false 200:" total "," new-total "," (pr-str jql)))
         (if (> startAt (:total rr))
           res
-          (recur (concat res new-res) (+ step startAt) (if (neg? total) new-total total)))))))
+          (recur (concat res new-res) (+ step startAt -10) (if (neg? total) new-total total)))))))
 
 (defn pja-search-full [f jql cb]
   (pja-search f jql {:fields ["*all"] :expand ["names","schema","transitions","comment","editmeta","changelog"]} cb))
