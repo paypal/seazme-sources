@@ -181,7 +181,6 @@
         cb #(p (format "intake-sessions/%s/document" (:key in-se)) (json/write-str %))]
     (->>
      (s/find-periods)
-     #_(take-last 3)
      (map (partial s/upload-period (s/mk-snow-api api) cb))
      (map print-and-pass)
      flatten

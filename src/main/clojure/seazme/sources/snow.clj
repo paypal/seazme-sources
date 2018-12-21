@@ -9,13 +9,13 @@
 
 (def oldest-issue "2016-11-01")
 (def oldest-issue-DT (tf/parse ff oldest-issue))
-(def newest-issue-DT (tc/plus (tc/now) (tc/days 1))) ;;TODO addumed that it is a one time run batch,  tc/now is timesensitive :-)
-(defn date-since-first[r] (tc/plus oldest-issue-DT (tc/days r)))
+(def until-issue-DT (tc/minus (tc/now) (tc/days 1))) ;;leave 24h margin, assumed that full scan spans to now-48h so there is always an overlap
+(defn date-since-first[r] (tc/plus oldest-issue-DT (tc/hours (* 3 r))))
 (defn find-periods[]
   (->>
    (range)
    (map date-since-first)
-   (take-while #(tc/before? % newest-issue-DT))
+   (take-while #(tc/before? % until-issue-DT)) ;;cannot do dynamic since there is no guarantees how early sequence is realized
    (map #(tf/unparse ff2 %))
    (partition 2 1)))
 
