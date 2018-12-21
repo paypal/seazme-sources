@@ -18,6 +18,7 @@
 ;;
 ;; common
 ;;
+(def continue-default 40) ;;depends on hub's time-span and find-periods
 (defn make-sure[] (prn "Please make sure that a few last entries/days from cache are manually deleted"));;TODO automate this
 (defn- wrap-with-counter[f] (let [counter (atom 0)]
                               [counter (fn[& args] (swap! counter inc) (apply f args))]))
@@ -104,7 +105,7 @@
 (defn confluence-update![{:keys [app-id index kind]} d s continue]
   #_(prn "DEBUG" index kind d s continue)
   (let [p (mk-datahub-post-api d)]
-    (loop [limit 5]
+    (loop [limit continue-default]
       (when (pos? limit)
         (let [{:keys [body status]} (p (format "intake-sessions?app-id=%s&description=Confluence update&command=update" app-id) nil)]
           (condp = status
@@ -133,11 +134,10 @@
         [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
         ret1 (->>
               (j/find-periods)
-              #_(take-last 1)
               (pmapr pf (partial j/upload-period context (:cache s) false pja-search-api cb))
               flatten
               frequencies)
-        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)];;WARNINIG: counter might not be exact as we overlap pagination to avoid missed items
     (prn "SUCCEEDED" ret1 ret2)
     ))
 (defn jira-update![context d s continue]
@@ -145,7 +145,7 @@
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
         pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
-    (loop [limit 5]
+    (loop [limit continue-default]
       (when (pos? limit)
           (let [{:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA update&command=update" app-id) nil)]
             (condp = status
@@ -165,7 +165,6 @@
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
     (->>
      (j/find-periods)
-     #_(take-last 1)
      (map (partial j/upload-period context true true pja-search-api (constantly "done")))
      flatten
      frequencies)

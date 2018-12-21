@@ -19,19 +19,17 @@
 (defn- wrap-with-counter[counter f] (fn[& args] (swap! counter inc) (apply f args)))
 (defn- combine-fun-calls[& fns] (fn[& args] (doall (map #(apply % args) fns))))
 (defn- write-to-stream[w s] (.write w (pr-str s)))
-(def oldest-issue "2013/01/01 12:00")
+(def oldest-issue "2007/01/01 00:00")
 (def oldest-issue-DT (tf/parse ff2 oldest-issue))
-(def newest-issue-DT (tc/plus (tc/now) (tc/days 1))) ;;TODO addumed that it is a one time run batch,  tc/now is timesensitive :-)
-(defn date-since-first[r] (tc/plus oldest-issue-DT (tc/days r)))
+(def until-issue-DT (tc/minus (tc/now) (tc/days 1))) ;;leave 24h margin, assumed that full scan spans to now-48h so there is always an overlap
+(defn date-since-first[r] (tc/plus oldest-issue-DT (tc/hours (* 3 r))))
 (defn find-periods[]
   (->>
    (range)
    (map date-since-first)
-   (take-while #(tc/before? % newest-issue-DT))
+   (take-while #(tc/before? % until-issue-DT)) ;;cannot do dynamic since there is no guarantees how early sequence is realized
    (map #(tr/to-long %))
-   (partition 2 1)
-   #_butlast;;TODO this is necessary for full scan to have correct time range but .... also last has to be manually removed when running scan again
-   ))
+   (partition 2 1)))
 
 (defn parse-ticket [kind bu instance base-url content]
   (let [p content
