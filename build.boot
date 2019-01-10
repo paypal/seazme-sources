@@ -67,8 +67,10 @@
                     ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-scan! c d (d2e/mk-conf-api s))
                     ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-update! c d (d2e/mk-conf-api s) o)
                     ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan! c d s)
+                    ["patch"  {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard some?)] (dh/jira-patch! c d s p)
                     ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-update! c d s o)
                     ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan-to-cache! c s)
+                    ["patch"  {:kind "jira"}       (d :guard nil?)          {:kind "jira"}        (p :guard some?)] (dh/jira-patch-to-cache! c d s p)
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}        (p :guard nil?)]  (dh/snow-scan! c d s)
 
                     ;;HBASE (reusing context, need args)
