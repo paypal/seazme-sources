@@ -80,7 +80,7 @@
   [a action VALUE str "action: reinit, scan, update"
    c context VALUE kw "kw"
    d destination VALUE kw "destination name"
-   s source VALUE kw "source  name"
+   s source VALUE kw "source name"
    o continue bool "indicates if update shall continue until DataHub returns 202 (no more data to pull)"]
   (try
     (run-main action context destination source continue)
