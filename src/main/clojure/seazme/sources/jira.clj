@@ -89,6 +89,14 @@
   )
 (def upload-period upload-period-full-stream)
 
+(defn upload-by-jql[{:keys [kind instance index]} pja-search-api callback-fn jql]
+  (with-open [w (-> "dump.edn.gz" io/output-stream java.util.zip.GZIPOutputStream. io/writer)]
+    (let [_ (println (str (tc/now)) "downloading JIRAs for:" jql)
+          cb (combine-fun-calls (partial write-to-stream w) callback-fn)
+          ret1 (jira-api/pja-search-full pja-search-api (format "%s ORDER BY updated ASC" jql) cb)]
+      (print "pulled" (count ret1))
+      (println "... done"))))
+
 (comment ;;older version, might not be compatible any more
   (defn- compress! [fn s]
     (let [final-path (str fn ".gz")

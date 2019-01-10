@@ -140,6 +140,20 @@
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)];;WARNINIG: counter might not be exact as we overlap pagination to avoid missed items
     (prn "SUCCEEDED" ret1 ret2)
     ))
+(defn jira-patch![context d s jql]
+  #_(prn "DEBUG" context d s jql)
+  (println "WARNINIG: please suspend update due to slight risk overwriting issues")
+  (let [{:keys [app-id index kind]} context
+        p (mk-datahub-post-api d)
+        {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA patch&command=patch" app-id) nil);;TODO for parameters
+        _ (prn "DEBUG" body)
+        session-id (:key body)
+        pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
+        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+        ret1 (j/upload-by-jql context pja-search-api cb jql)
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)];;WARNINIG: counter might not be exact as we overlap pagination to avoid missed items
+    (prn "SUCCEEDED" ret1 ret2)
+    ))
 (defn jira-update![context d s continue]
   #_(prn "DEBUG" context d s continue)
   (let [{:keys [app-id index kind]} context
@@ -167,6 +181,13 @@
      (j/find-periods)
      (map (partial j/upload-period context true true pja-search-api (constantly "done")))
      flatten
+     frequencies)
+    ))
+(defn jira-patch-to-cache![context d s jql]
+  #_(prn "DEBUG" context d s jql)
+  (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
+    (->>
+     (j/upload-by-jql context pja-search-api (constantly "done") jql)
      frequencies)
     ))
 
