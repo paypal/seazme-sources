@@ -41,38 +41,39 @@
          '[seazme.sources.snapshot :as ss]
          '[clojure.tools.logging :as log])
 
-(defn- run-main[action context destination source continue]
+(defn- run-main[action context destination source parameters continue]
   (let [a action
         c (config/config context)
         d (config/config destination)
         s (config/config source)
+        p parameters
         o continue]
-    (println (match [a c d s]
+    (println (match [a c d s p]
                     ;;main dispatch, it is not perfect and there might be some corner cases when config is bad
                     ;;TODO make it very type aware and validate everything
                     ;;ElasticSearch
-                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)]      (d2e/reinit! c (es/mk-connection d))
-                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)]      (d2e/reinit-datasources! (es/mk-connection d))
+                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)       (p :guard nil?)]  (d2e/reinit! c (es/mk-connection d))
+                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)       (p :guard nil?)]  (d2e/reinit-datasources! (es/mk-connection d))
 
                     ;;ElasticSearch (pre HBASE version, still works)
-                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}]      (d2e/twiki-scan! c (es/mk-connection d) s)
-                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (d2e/confluence-scan-2cache! c d (d2e/mk-conf-api s))
-                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (d2e/confluence-scan-2index! c (es/mk-connection d) s)
-                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}] (d2e/confluence-update-cache! c d (d2e/mk-conf-api s))
-                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}]      (d2e/confluence-update-index! c (es/mk-connection d) s)
+                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}       (p :guard nil?)]  (d2e/twiki-scan! c (es/mk-connection d) s)
+                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}  (p :guard nil?)]  (d2e/confluence-scan-2cache! c d (d2e/mk-conf-api s))
+                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}       (p :guard nil?)]  (d2e/confluence-scan-2index! c (es/mk-connection d) s)
+                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}  (p :guard nil?)]  (d2e/confluence-update-cache! c d (d2e/mk-conf-api s))
+                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}       (p :guard nil?)]  (d2e/confluence-update-index! c (es/mk-connection d) s)
 
                     ;;DataHub
-                    ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}]      (dh/twiki-scan! c d s)
-                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-scan! c d (d2e/mk-conf-api s))
-                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}] (dh/confluence-update! c d (d2e/mk-conf-api s) o)
-                    ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-scan! c d s)
-                    ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}]       (dh/jira-update! c d s o)
-                    ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}]       (dh/jira-scan-to-cache! c s)
-                    ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}]       (dh/snow-scan! c d s)
+                    ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}       (p :guard nil?)]  (dh/twiki-scan! c d s)
+                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-scan! c d (d2e/mk-conf-api s))
+                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-update! c d (d2e/mk-conf-api s) o)
+                    ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan! c d s)
+                    ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-update! c d s o)
+                    ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan-to-cache! c s)
+                    ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}        (p :guard nil?)]  (dh/snow-scan! c d s)
 
                     ;;HBASE (reusing context, need args)
-                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _]      (h2e/process-sessions! c (es/mk-connection d))
-                    ["update" {:kind "hbase"}      (d :guard nil?)          _]      (ss/process-sessions! c)
+                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c (es/mk-connection d))
+                    ["update" {:kind "hbase"}      (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c)
                     :else "options and/or config mismatch"))))
 
 (cli/defclifn -main
@@ -81,9 +82,10 @@
    c context VALUE kw "kw"
    d destination VALUE kw "destination name"
    s source VALUE kw "source name"
+   p parameters VALUE str "context specific parameters"
    o continue bool "indicates if update shall continue until DataHub returns 202 (no more data to pull)"]
   (try
-    (run-main action context destination source continue)
+    (run-main action context destination source parameters continue)
     (catch Exception ex (do
                           (prn ex "-main failed to execute")
                           (log/error ex "-main failed to execute")))))
