@@ -18,7 +18,7 @@
 
 (defn- wrap-with-counter[counter f] (fn[& args] (swap! counter inc) (apply f args)))
 (defn- combine-fun-calls[& fns] (fn[& args] (doall (map #(apply % args) fns))))
-(defn- write-to-stream[w s] (.write w (pr-str s)))
+(defn- write-to-stream[w s] (.write w (pr-str s)) (.newLine w))
 (def oldest-issue "2007/01/01 00:00")
 (def oldest-issue-DT (tf/parse ff2 oldest-issue))
 (def until-issue-DT (tc/minus (tc/now) (tc/days 1))) ;;leave 24h margin, assumed that full scan spans to now-48h so there is always an overlap
