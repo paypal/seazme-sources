@@ -122,6 +122,21 @@
 ;;
 ;; JIRA
 ;;
+
+(def scanned-jira-keys (atom {}))
+(defn- to-datahub[p payload]
+  (let [jira-key (-> payload :key)
+        jira-id (-> payload :id)
+        updated (-> payload :fields :updated)]
+    (locking (.intern jira-key)
+      (let [old-updated (@scanned-jira-keys jira-key)]
+        (if (neg? (compare old-updated updated))
+          (do
+            (swap! scanned-jira-keys assoc jira-key updated)
+            (println "posting:" jira-key jira-id updated old-updated)
+            (and p (p payload)))
+          (println "skipping:" jira-key jira-id updated old-updated))))))
+
 (defn jira-scan![context d s]
   #_(prn "DEBUG" context d s)
   (make-sure)
@@ -131,7 +146,7 @@
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA full scan&command=scan" app-id) nil)
         session-id (:key body)
         pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
-        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+        [counter cb] (wrap-with-counter (partial to-datahub #(p (format "intake-sessions/%s/document" session-id) (json/write-str %))))
         ret1 (->>
               (j/find-periods)
               (pmapr pf (partial j/upload-period context (:cache s) false pja-search-api cb))
