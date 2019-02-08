@@ -82,7 +82,7 @@
             new-total (:total rr)
             _ (when debug (prn "DEBUG3" total new-total startAt (dissoc r :body) (dissoc rr :issues :names :schema) (count (:issues rr)) (count (:names rr))))
             new-res (->> rr :issues (map cb) doall)]
-        (assert (<= total (+ new-total 100)) (str "false 200:" total "," new-total "," (pr-str jql)))
+        (assert (<= total (+ new-total step)) (str "false 200:" total "," new-total "," (pr-str jql)))
         (if (> startAt (:total rr))
           res
           (recur (concat res new-res) (+ step startAt -10) (if (neg? total) new-total total)))))))
