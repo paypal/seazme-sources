@@ -60,15 +60,13 @@
         base-path (format "db/%s-cache/%s/%s" kind instance index)
         _ (fs/mkdirs base-path)
         file-path (apply format "%s/%s-%s.edn.gz" base-path period2)
-        future-file-path (str file-path ".future")
-        posting-fn #(println "posting:" (:key %) (:id %) (-> % :fields :updated))]
+        future-file-path (str file-path ".future")]
     (if (and cached? (fs/exists? file-path))
       (do
         (when-not skip-cache
           (println  "... only form cache")
           (with-open [in (-> file-path io/input-stream java.util.zip.GZIPInputStream. io/reader java.io.PushbackReader.)]
-            (let[cb (combine-fun-calls posting-fn callback-fn)
-                 counter (atom 0)
+            (let[counter (atom 0)
                  edn-seq (repeatedly (wrap-with-counter counter (partial edn/read {:eof nil} in)))]
               (dorun (map callback-fn (take-while (partial not= nil) edn-seq)))
               (print "pulled" @counter)))))
@@ -76,14 +74,13 @@
         (do
           (println  "... and cache")
           (with-open [w (-> future-file-path io/output-stream java.util.zip.GZIPOutputStream. io/writer)]
-            (let [cb (combine-fun-calls (partial write-to-stream w) posting-fn callback-fn)
+            (let [cb (combine-fun-calls (partial write-to-stream w) callback-fn)
                   cnt (count (period-search pja-search-api period cb))]
               (print "pulled" cnt)))
           (fs/rename (fs/file future-file-path) (fs/file file-path)))
         (do
           (println  "... no cache")
-          (let [cb (combine-fun-calls posting-fn callback-fn)
-                cnt (count (period-search pja-search-api period cb))]
+          (let [cnt (count (period-search pja-search-api period callback-fn))]
             (print "pulled" cnt)))))
     (println "... done"))
   )
