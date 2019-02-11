@@ -124,6 +124,8 @@
 ;;
 
 (def scanned-jira-keys (atom {}))
+(defn- to-datahub-posting[payload]
+  (println "posting:" (:key payload) (:id payload) (-> payload :fields :updated)))
 (defn- to-datahub[p payload]
   (let [jira-key (-> payload :key)
         jira-id (-> payload :id)
@@ -152,7 +154,7 @@
               (pmapr pf (partial j/upload-period context (:cache s) false pja-search-api cb))
               flatten
               frequencies)
-        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)];;WARNINIG: counter might not be exact as we overlap pagination to avoid missed items
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
     (prn "SUCCEEDED" ret1 ret2)
     ))
 (defn jira-patch![context d s jql]
@@ -164,9 +166,9 @@
         _ (prn "DEBUG" body)
         session-id (:key body)
         pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
-        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+        [counter cb] (wrap-with-counter (partial to-datahub-posting #(p (format "intake-sessions/%s/document" session-id) (json/write-str %))))
         ret1 (j/upload-by-jql context pja-search-api cb jql)
-        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)];;WARNINIG: counter might not be exact as we overlap pagination to avoid missed items
+        ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
     (prn "SUCCEEDED" ret1 ret2)
     ))
 (defn jira-update![context d s continue]
@@ -180,7 +182,7 @@
             (condp = status
               200 (let [session-id (:key body)
                         {{:keys [from to]} :range} body
-                        [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
+                        [counter cb] (wrap-with-counter (partial to-datahub-posting #(p (format "intake-sessions/%s/document" session-id) (json/write-str %))))
                         ret1 (j/upload-period context (:cache s) false pja-search-api cb (list from to))
                         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
                     (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
@@ -194,7 +196,7 @@
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
     (->>
      (j/find-periods)
-     (map (partial j/upload-period context true true pja-search-api (constantly "done")))
+     (map (partial j/upload-period context true true pja-search-api to-datahub-posting))
      flatten
      frequencies)
     ))
