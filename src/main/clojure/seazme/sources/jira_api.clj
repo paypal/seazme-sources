@@ -1,7 +1,11 @@
 (ns seazme.sources.jira-api
   (:require [clj-http.client :as c]
-            [clojure.data.json :as json])
-            )
+            [clojure.data.json :as json]
+            [clj-time.format :as tf] [clj-time.coerce :as tr] [clj-time.core :as tc]))
+
+(def jira-ts-formatter (tf/formatters :date-time))
+
+(def ff2 (tf/formatter "YYYY/MM/dd HH:mm"));;TODO fix names!
 
 (defn- remove-nilvals[m] (into {} (remove (comp nil? second) m)))
 
@@ -69,6 +73,7 @@
         rr (json/read-str (:body r) :key-fn keyword)]
     (:issues rr)))
 
+;; WARNINIG: not accurate, forced to implement own since pagination is not stateful
 (defn pja-search [f jql {:keys [fields expand] :or {fields ["dummy"] expand nil}} cb]
   (let [step 100
         req (remove-nilvals {:jql jql :fields fields :expand expand :maxResults step})
@@ -89,6 +94,33 @@
 
 (defn pja-search-full [f jql cb]
   (pja-search f jql {:fields ["*all"] :expand ["names","schema","transitions","comment","editmeta","changelog"]} cb))
+
+;;
+(defn pja-search-all [f from to {:keys [fields expand] :or {fields ["dummy"] expand nil}} cb]
+  (let [jql-format "updated >= '%s' and updated < '%s' ORDER BY updated ASC"
+        maxResults 350 ;that has to significantly bigger than a top number of updates per minute.
+        startAt 0
+        debug (f)]
+    (loop [res []
+           updated from
+           jira-keys #{}]
+      (let [jql (format jql-format updated to)
+            req (remove-nilvals {:jql jql :fields fields :expand expand :maxResults maxResults :startAt startAt})
+            r (f req)
+            rr (json/read-str (:body r) :key-fn keyword)
+            total (:total rr)
+            new-jira-keys (->> rr :issues (map :key) set)
+            new-res (->> rr :issues (map cb) doall)
+            _ (when debug (prn "DEBUG4" from to updated req total (count new-res) (count new-jira-keys) (count (:issues rr)) (count (:names rr)) new-jira-keys (dissoc r :body) (dissoc rr :issues :names :schema)))]
+        (if (<= total maxResults)
+          res
+          (do
+            (assert (not= jira-keys new-jira-keys) (str "to many tickets in a single minute:" from "," to "," updated)) ;;one more API trip is necessary as in JIRA <,> and <=,=> are not precise
+            (let [max-updated (->> rr :issues (map :fields) (map :updated) sort last (tf/parse jira-ts-formatter) (tf/unparse ff2))]
+              (recur (concat res new-res) max-updated new-jira-keys))))))))
+
+(defn pja-search-all-full [f from to cb]
+  (pja-search-all f from to {:fields ["*all"] :expand ["names","schema","transitions","comment","editmeta","changelog"]} cb))
 
 #_(defn pja-last [f project-or-project-key]
   (let [c (pja-search-limited f (str "project = " project-or-project-key " " "ORDER BY created DESC") ["id" "key"] 2) ;;TODO ["id" "key"] is not correct here, any non empty list of fields will get :id and :key. JIRA API spec does not describe "fields" well
