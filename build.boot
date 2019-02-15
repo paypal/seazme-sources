@@ -88,6 +88,9 @@
    o continue bool "indicates if update shall continue until DataHub returns 202 (no more data to pull)"]
   (try
     (run-main action context destination source parameters continue)
+    (catch java.lang.AssertionError er (do
+                                         (prn er "-main assert")
+                                         (log/error er "-main assert")))
     (catch Exception ex (do
                           (prn ex "-main failed to execute")
                           (log/error ex "-main failed to execute")))))
