@@ -61,9 +61,9 @@
 (def period-search period-search-all-full)
 
 (defn- upload-period-full-stream[{:keys [kind instance index]} cached? skip-cache pja-search-api callback-fn period]
+  (Thread/sleep (+ 10 (rand-int 100)))
   (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
-        _ (print (str (tc/now)) "downloading JIRAs for:" period2 cached? kind instance index);;TODO unify ts in logs
-        _ (flush)
+        msg (str (tc/now)" downloading JIRAs for:"(pr-str period2)" "cached?" "kind" "instance" "index)
         base-path (format "db/%s-cache/%s/%s" kind instance index)
         _ (fs/mkdirs base-path)
         file-path (apply format "%s/%s-%s.edn.gz" base-path period2)
@@ -71,26 +71,24 @@
     (if (and cached? (fs/exists? file-path))
       (do
         (when-not skip-cache
-          (println  "... only form cache")
+          (println (str msg"... only form cache"))
           (with-open [in (-> file-path io/input-stream java.util.zip.GZIPInputStream. io/reader java.io.PushbackReader.)]
             (let[counter (atom 0)
                  edn-seq (repeatedly (wrap-with-counter counter (partial edn/read {:eof nil} in)))]
               (dorun (map callback-fn (take-while (partial not= nil) edn-seq)))
-              (print "pulled" @counter)))))
+              (println (str msg"...pulled:"@counter))))))
       (if cached?
         (do
-          (println  "... and cache")
+          (println (str msg"... and cache"))
           (with-open [w (-> future-file-path io/output-stream java.util.zip.GZIPOutputStream. io/writer)]
             (let [cb (combine-fun-calls (partial write-to-stream w) callback-fn)
                   cnt (count (period-search pja-search-api period cb))]
-              (print "pulled" cnt)))
+              (println (str msg"...pulled:"cnt))))
           (fs/rename (fs/file future-file-path) (fs/file file-path)))
         (do
-          (println  "... no cache")
+          (println (str msg"... no cache"))
           (let [cnt (count (period-search pja-search-api period callback-fn))]
-            (print "pulled" cnt)))))
-    (println "... done"))
-  )
+            (println (str msg"...pulled:"cnt))))))))
 (def upload-period upload-period-full-stream)
 
 (defn upload-by-jql[{:keys [kind instance index]} pja-search-api callback-fn jql]
