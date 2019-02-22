@@ -18,6 +18,8 @@ After making sure that software from Prerequisites is installed, clone this repo
 
 Examples:
 #+BEGIN_EXAMPLE
+export BOOT_JVM_OPTIONS="-Xmx12g -XX:+UseSerialGC"
+
 ./data-miner -a reinit -c context-demo-twiki -d elasticsearch-prod
 ./data-miner -a scan -c context-demo-twiki -d elasticsearch-prod -s twiki-demo-prod
 ./data-miner -a scan -c context-demo-confluence -d confluence-demo-cache -s confluence-demo-prod
