@@ -27,6 +27,7 @@
                  [com.sun.mail/javax.mail "1.5.5"]
                  [com.draines/postal "1.11.3"]
                  [hiccup "1.0.5"]
+                 [danlentz/clj-uuid "0.1.7"]
                  ]
  :resource-paths #{"resources"}
  :source-paths   #{"src/main/clojure"})
@@ -74,8 +75,10 @@
                     ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}        (p :guard nil?)]  (dh/snow-scan! c d s)
 
                     ;;HBASE (reusing context, need args)
-                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c (es/mk-connection d))
-                    ["update" {:kind "hbase"}      (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c)
+                    ["scan" {:kind "hbase"}        {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c a (es/mk-connection d))
+                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c a (es/mk-connection d));;includes "patch"
+                    ["scan" {:kind "hbase"}        (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a)
+                    ["update" {:kind "hbase"}      (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a);;includes "patch"
                     :else "options and/or config mismatch"))))
 
 (cli/defclifn -main

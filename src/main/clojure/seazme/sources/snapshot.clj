@@ -1,5 +1,6 @@
 (ns seazme.sources.snapshot
-  (:require [seazme.common.hbase :as hb]
+  (:require [clojure.data.json :as json]
+            [seazme.common.hbase :as hb]
             [cbass.tools :refer [to-bytes]]
             [cbass :refer [pack-un-pack]][taoensso.nippy :as n]);;this is hack waiting for fix: https://github.com/tolitius/cbass/issues/9
   (:use seazme.sources.common
@@ -30,44 +31,39 @@
 (defn- update-hbase![expl]
   (let [jts (jts-now)
         payload (-> expl second :self :payload)
-        hbase-payload (into {} (apply-field-mapping field-mapping payload))
         document-key (clojure.string/reverse (:id payload))
-        document-meta {
-                       ;;:session {:id session-id :key session-key :tsx session-tsx}
-                       :key document-key
-                       :created jts}]
-    (println "posting:" (:key payload) (:id payload) (-> payload :fields :updated))
-    (hb/store* "datahub:snapshot-data" document-key :raw {:payload payload :type "document" :meta document-meta})
+        hive-cf-content (into {} (apply-field-mapping field-mapping payload))
+        datahub-cf-content {"id" (:id payload)
+                            "key" (:key payload)
+                            "updated" (-> payload :fields :updated)
+                            "status" (-> payload :fields :status :name)
+                            "meta" (json/write-str {:key document-key
+                                                    :source "sources"
+                                                    :type "document"
+                                                    :created jts})
+                            "json" (json/write-str payload)}]
+    (println "\tposting:" (:key payload) (:id payload) (-> payload :fields :updated))
     (pack-un-pack {:p #(to-bytes %)})
-    (hb/store** "datahub:snapshot-data" document-key "jirappmain" hbase-payload)
+    (hb/store** "datahub:snapshot-data" document-key "hive" hive-cf-content)
+    (hb/store** "datahub:snapshot-data" document-key "datahub" datahub-cf-content)
     (pack-un-pack {:p n/freeze})))
 
-(defn update-snapshot![session]
+(defn- update-snapshot![session]
   (let [session-id (-> session :self :meta :id)
         session-tsx (-> session :self :meta :tsx)
         session-count (-> session :self :count)
-        _ (println "updating:" session-count "entries for" session-tsx "and session-id" session-id "...")
         real-cnt (->> dist-bytes
                  (map #(->> % (get-data-entries-seq session-id) (map update-hbase!) doall))
                  (mapcat identity)
                  count)]
-    (println "updated:" session-count "entries for" session-tsx "and session-id" session-id " with " real-cnt)
-    real-cnt
-    ))
+    real-cnt))
 
-(defn- process-session![prefix upload [old-tsx old-created a2i a2u] session-kv]
-  (let [session (-> session-kv second)
-        self (-> session :self)
-        app (-> session :app)
-        tsx (-> self :meta :tsx)
-        ts (-> self :meta :created)
-        created (-> self :meta :created)
-        u (select-keys app [:instance :bu :kind])]
-    (println "processing:" prefix u ts tsx)
-    (if (and (pos? (compare tsx (a2u u))) (= "e7228880-27a4-11e8-8178-4f6e83cbd595" (-> app :meta :key))) ;;tsx in session is newer than from update-log ;;TODO critical for UT
-      (let [cnt (upload session)]
-        [tsx created (assoc a2i u ts) (assoc a2u u tsx) cnt])
-      [tsx created a2i a2u nil])))
+(defn- action-snap[prefix ts prev-ts app session]
+  (if (= "jira" (-> app :kind))
+    (update-snapshot! session)
+    (do
+      (println "\tskipped:" (-> session :self :meta :tsx))
+      nil)))
 
-(defn process-sessions![{:keys [prefix]}]
-  (process-update-log! (partial process-session! prefix update-snapshot!) prefix))
+(defn process-sessions![{:keys [prefix]} action]
+  (run-update-log! prefix action  action-snap action-snap))
