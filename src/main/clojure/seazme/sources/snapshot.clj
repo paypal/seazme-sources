@@ -47,11 +47,13 @@
         session-tsx (-> session :self :meta :tsx)
         session-count (-> session :self :count)
         _ (println "updating:" session-count "entries for" session-tsx "and session-id" session-id "...")
-        res (->> dist-bytes
+        real-cnt (->> dist-bytes
                  (map #(->> % (get-data-entries-seq session-id) (map update-hbase!) doall))
                  (mapcat identity)
                  count)]
-    (println "updated:" session-count "entries for" session-tsx "and session-id" session-id " with " res)))
+    (println "updated:" session-count "entries for" session-tsx "and session-id" session-id " with " real-cnt)
+    real-cnt
+    ))
 
 (defn- process-session![prefix upload [old-tsx old-created a2i a2u] session-kv]
   (let [session (-> session-kv second)
@@ -65,7 +67,7 @@
     (if (and (pos? (compare tsx (a2u u))) (= "e7228880-27a4-11e8-8178-4f6e83cbd595" (-> app :meta :key))) ;;tsx in session is newer than from update-log ;;TODO critical for UT
       (let [cnt (upload session)]
         [tsx created (assoc a2i u ts) (assoc a2u u tsx) cnt])
-      [tsx created a2i a2u -1])))
+      [tsx created a2i a2u nil])))
 
 (defn process-sessions![{:keys [prefix]}]
   (process-update-log! (partial process-session! prefix update-snapshot!) prefix))
