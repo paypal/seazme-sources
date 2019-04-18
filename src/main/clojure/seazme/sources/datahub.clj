@@ -19,7 +19,10 @@
 ;; common
 ;;
 (def continue-default 40) ;;depends on hub's time-span and find-periods
-(defn make-sure[] (prn "Please make sure that a few last entries/days from cache are manually deleted"));;TODO automate this
+(defn make-sure[]
+  ;;TODO automate this
+  (prn "Please delete a few last entries/days from cache dir, as they contain unnecessary data")
+  (prn "Warning: it might take a while to see results as all entries in the cache have to be verified"))
 (defn- wrap-with-counter[f] (let [counter (atom 0)]
                               [counter (fn[& args] (swap! counter inc) (apply f args))]))
 (defn- jts-to-str[jts] (->> jts te/from-long (tf/unparse (tf/formatters :mysql))))
