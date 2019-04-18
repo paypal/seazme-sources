@@ -78,10 +78,10 @@
                              (let [indx (app2index2 prefix app (a2i u))]
                                (when-not (indx-exists? indx)
                                  (throw (Exception. (str "index" " \"" indx "\" " "does not exist!"))))
-                               [indx a2i]))]
-        (upload indx session)
-        [tsx created new-a2i (assoc a2u u tsx)])
-      [tsx created a2i a2u])))
+                               [indx a2i]))
+            res (upload indx session)]
+        [tsx created new-a2i (assoc a2u u tsx) (->> res vals (reduce +))])
+      [tsx created a2i a2u nil])))
 
 (defn process-sessions![{:keys [prefix]} es-conn]
   (let [indx-exists? (fn [indx] (ces/exists? es-conn indx))
