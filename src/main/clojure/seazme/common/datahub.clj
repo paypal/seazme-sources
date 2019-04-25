@@ -17,7 +17,7 @@
 (defn default-parse-topic[kind bu instance base-url content] nil)
 
 (def filter-action (comp (partial = "submit") :action :meta :self second))
-(defn find-sessions[last-update]
+(defn find-sessions-kv[last-update]
   (doall
    (if (nil? last-update)
      (->> (hb/scan* "datahub:intake-sessions" :lazy? true)
@@ -25,6 +25,7 @@
      (->> (hb/scan* "datahub:intake-sessions" :from last-update :lazy? true)
           (filter filter-action)
           rest))))
+(defn find-sessions[last-update] (->> last-update find-sessions-kv (map second)))
 
 (defn apps2map[apps] (->> apps (map (comp #(vector % nil) #(select-keys % [:bu :kind :instance]) :self second)) (into {})))
 
