@@ -32,8 +32,8 @@
   (let [jts (jts-now)
         payload (-> expl second :self :payload)
         document-key (clojure.string/reverse (:id payload))
-        hive-cf-content (into {} (apply-field-mapping field-mapping payload))
-        datahub-cf-content {"id" (:id payload)
+        hive-cf-payload (into {} (apply-field-mapping field-mapping payload))
+        datahub-cf-payload {"id" (:id payload)
                             "key" (:key payload)
                             "updated" (-> payload :fields :updated)
                             "status" (-> payload :fields :status :name)
@@ -41,11 +41,11 @@
                                                     :source "sources"
                                                     :type "document"
                                                     :created jts})
-                            "json" (json/write-str payload)}]
+                            "payload" (json/write-str payload)}]
     (println "\tposting:" (:key payload) (:id payload) (-> payload :fields :updated))
     (pack-un-pack {:p #(to-bytes %)})
-    (hb/store** "datahub:snapshot-data" document-key "hive" hive-cf-content)
-    (hb/store** "datahub:snapshot-data" document-key "datahub" datahub-cf-content)
+    (hb/store** "datahub:snapshot-data" document-key "hive" hive-cf-payload)
+    (hb/store** "datahub:snapshot-data" document-key "datahub" datahub-cf-payload)
     (pack-un-pack {:p n/freeze})))
 
 (defn- update-snapshot![session]
