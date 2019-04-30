@@ -111,13 +111,14 @@
             total (:total rr)
             new-jira-keys (->> rr :issues (map :key) set)
             new-res (->> rr :issues (map cb) doall)
+            fin-res (concat res new-res)
             _ (when debug (prn "DEBUG4" from to updated req total (count new-res) (count new-jira-keys) (count (:issues rr)) (count (:names rr)) new-jira-keys (dissoc r :body) (dissoc rr :issues :names :schema)))]
         (if (<= total maxResults)
-          res
+          fin-res
           (do
-            (assert (not= jira-keys new-jira-keys) (str "to many tickets in a single minute:" from "," to "," updated)) ;;one more API trip is necessary as in JIRA <,> and <=,=> are not precise
+            (assert (not= jira-keys new-jira-keys) (str "too many tickets in a single pull:" updated " and " to " starting from: " from)) ;;one more API trip is necessary as in JIRA <,> and <=,=> are not precise
             (let [max-updated (->> rr :issues (map :fields) (map :updated) sort last (tf/parse jira-ts-formatter) (tf/unparse ff2))]
-              (recur (concat res new-res) max-updated new-jira-keys))))))))
+              (recur fin-res max-updated new-jira-keys))))))))
 
 (defn pja-search-all-full [f from to cb]
   (pja-search-all f from to {:fields ["*all"] :expand ["names","schema","transitions","comment","editmeta","changelog"]} cb))
