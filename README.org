@@ -10,7 +10,7 @@ A collection of business processes used to mine Confluence, discover information
 
 *** Configuration
 
-search profiles are prod level
+There are 3 files: a standard ~resources/log4j.properties~ and SeazMe specific ~config.edn~ as well as ~mapping.edn~ which need to be configured properly.
 
 *** Usage
 
@@ -20,21 +20,23 @@ Examples:
 #+BEGIN_EXAMPLE
 export BOOT_JVM_OPTIONS="-Xmx12g -XX:+UseSerialGC"
 
-./data-miner -a reinit -c context-demo-twiki -d elasticsearch-prod
-./data-miner -a scan -c context-demo-twiki -d elasticsearch-prod -s twiki-demo-prod
-./data-miner -a scan -c context-demo-confluence -d confluence-demo-cache -s confluence-demo-prod
-./data-miner -a scan -c context-demo-confluence -d elasticsearch-prod -s confluence-demo-cache
+./<executable> -a reinit -c context-demo-twiki -d elasticsearch-prod
+./<executable> -a scan -c context-demo-twiki -d elasticsearch-prod -s twiki-demo-prod
+./<executable> -a scan -c context-demo-confluence -d confluence-demo-cache -s confluence-demo-prod
+./<executable> -a scan -c context-demo-confluence -d elasticsearch-prod -s confluence-demo-cache
 
-./data-miner -a scan -c context-demo-twiki -d datahub-prod -s twiki-demo-prod
-./data-miner -a scan -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
+./<executable> -a scan -c context-demo-twiki -d datahub-prod -s twiki-demo-prod
+./<executable> -a scan -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
 
-./data-miner -a update -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
+./<executable> -a update -c context-demo-confluence -d datahub-prod -s confluence-demo-prod
 
-./data-miner -a update -c context-hbase -d elasticsearch-prod
-./data-miner -a update -c context-hbase
+./<executable> -a update -c context-hbase -d elasticsearch-prod
+./<executable> -a update -c context-hbase
 
-./data-miner -a patch -c context-demo-jira -d datahub-prod -s jira-demo-prod -p "key in (DATAHUB-1,DATAHUB-2)"
+./<executable> -a patch -c context-demo-jira -d datahub-prod -s jira-demo-prod -p "key in (DATAHUB-1,DATAHUB-2)"
 
 #+END_EXAMPLE
+
+Where ~executable~ is either ~sources~ or ~java -jar ~sources-<version-tag>.jar~ build with ~build~. Add ~-Dlog4j.configuration=file:resources/log4j.properties~ to java if logging is desired.
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.
