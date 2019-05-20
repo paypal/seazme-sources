@@ -1,7 +1,10 @@
 #!/usr/bin/env boot
 
 (set-env!
+ :project 'seazme-sources
  :dependencies '[[org.clojure/clojure "1.7.0"]
+                 [boot/base "2.7.1"]
+                 [boot/core "2.7.1"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/math.combinatorics "0.1.1"]
                  [org.clojure/core.match "0.3.0-alpha4"]
@@ -13,7 +16,7 @@
                  [clucy "0.4.0"]
                  [digest "1.4.4"]
                  [environ "1.0.2"]
-                 [javax.mail/mail  "1.4.5"]
+                 [javax.mail/mail  "1.4.7"]
                  [me.raynes/fs "1.4.4"]
                  [org.apache.james/apache-mime4j-core "0.7.2"]
                  [org.apache.james/apache-mime4j-dom "0.7.2"]
@@ -24,88 +27,34 @@
                  [cbass "0.1.5"]
                  [com.grammarly/perseverance "0.1.2"]
                  [org.apache.hadoop/hadoop-common "2.6.0"] [com.google.guava/guava "15.0"]
-                 [com.sun.mail/javax.mail "1.5.5"]
                  [com.draines/postal "1.11.3"]
                  [hiccup "1.0.5"]
                  [danlentz/clj-uuid "0.1.7"]
+                 [org.clojure/data.csv "0.1.3"]
+                 [clj-jgit "0.8.9"]
+                 [clj-time "0.11.0"]
                  ]
- :resource-paths #{"resources"}
- :source-paths   #{"src/main/clojure"})
+ :resource-paths   #{"resources" "src/main/clojure"})
 
-(require '[boot.cli :as cli]
-         '[clojure.core.match :refer [match]]
-         '[seazme.common.config :as config]
-         '[seazme.common.es :as es]
-         '[seazme.sources.direct2es :as d2e]
-         '[seazme.sources.datahub :as dh]
-         '[seazme.sources.hbase2es :as h2e]
-         '[seazme.sources.snapshot :as ss]
-         '[clojure.tools.logging :as log])
+(require '[clj-jgit.porcelain :as p])
 
-(defn- run-main[action context destination source parameters continue]
-  (let [a action
-        c (config/config context)
-        d (config/config destination)
-        s (config/config source)
-        p parameters
-        o continue]
-    (println (match [a c d s p]
-                    ;;main dispatch, it is not perfect and there might be some corner cases when config is bad
-                    ;;TODO make it very type aware and validate everything
-                    ;;ElasticSearch
-                    ["reinit" (c :guard some?)     (d :guard some?)         (s :guard nil?)       (p :guard nil?)]  (d2e/reinit! c (es/mk-connection d))
-                    ["reinitdatasources" (c :guard nil?)  (d :guard some?)  (s :guard nil?)       (p :guard nil?)]  (d2e/reinit-datasources! (es/mk-connection d))
+(defn -main [& args]
+  (require 'seazme.sources.main)
+  (apply (resolve 'seazme.sources.main/-main) args))
 
-                    ;;ElasticSearch (pre HBASE version, still works)
-                    ["scan"   {:kind "twiki"}      {:kind "elasticsearch"}  {:kind "twiki"}       (p :guard nil?)]  (d2e/twiki-scan! c (es/mk-connection d) s)
-                    ["scan"   {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}  (p :guard nil?)]  (d2e/confluence-scan-2cache! c d (d2e/mk-conf-api s))
-                    ["scan"   {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}       (p :guard nil?)]  (d2e/confluence-scan-2index! c (es/mk-connection d) s)
-                    ["update" {:kind "confluence"} {:kind "cache"}          {:kind "confluence"}  (p :guard nil?)]  (d2e/confluence-update-cache! c d (d2e/mk-conf-api s))
-                    ["update" {:kind "confluence"} {:kind "elasticsearch"}  {:kind "cache"}       (p :guard nil?)]  (d2e/confluence-update-index! c (es/mk-connection d) s)
+(def git-stamp (p/with-repo "." (format "%s.%s" (p/git-branch-current repo) (-> repo p/git-log first .getName (subs 0 8)))))
 
-                    ;;DataHub
-                    ["scan"   {:kind "twiki"}      {:kind "datahub"}        {:kind "twiki"}       (p :guard nil?)]  (dh/twiki-scan! c d s)
-                    ["scan"   {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-scan! c d (d2e/mk-conf-api s))
-                    ["update" {:kind "confluence"} {:kind "datahub"}        {:kind "confluence"}  (p :guard nil?)]  (dh/confluence-update! c d (d2e/mk-conf-api s) o)
-                    ["scan"   {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan! c d s)
-                    ["patch"  {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard some?)] (dh/jira-patch! c d s p)
-                    ["update" {:kind "jira"}       {:kind "datahub"}        {:kind "jira"}        (p :guard nil?)]  (dh/jira-update! c d s o)
-                    ["scan"   {:kind "jira"}       (d :guard nil?)          {:kind "jira"}        (p :guard nil?)]  (dh/jira-scan-to-cache! c s)
-                    ["patch"  {:kind "jira"}       (d :guard nil?)          {:kind "jira"}        (p :guard some?)] (dh/jira-patch-to-cache! c d s p)
-                    ["scan"   {:kind "snow"}       {:kind "datahub"}        {:kind "snow"}        (p :guard nil?)]  (dh/snow-scan! c d s)
-
-                    ;;HBASE (reusing context, need args)
-                    ["scan" {:kind "hbase"}        {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c a (es/mk-connection d))
-                    ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c a (es/mk-connection d));;includes "patch"
-                    ["scan" {:kind "hbase"}        (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a)
-                    ["update" {:kind "hbase"}      (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a);;includes "patch"
-                    :else "options and/or config mismatch"))))
-
-(cli/defclifn -main
-  "Executes data miner for Confluence, Twiki, mbox, etc based on options and configuration defined in config.edn. Depending on a context, only some combinations of options and configuration are valid."
-  [a action VALUE str "action: reinit, scan, update"
-   c context VALUE kw "kw"
-   d destination VALUE kw "destination name"
-   s source VALUE kw "source name"
-   p parameters VALUE str "context specific parameters"
-   o continue bool "indicates if update shall continue until DataHub returns 202 (no more data to pull)"]
-  (try
-    (run-main action context destination source parameters continue)
-    (catch java.lang.AssertionError er (do
-                                         (prn er "-main assert")
-                                         (log/error er "-main assert")))
-    (catch Exception ex (do
-                          (prn ex "-main failed to execute")
-                          (log/error ex "-main failed to execute")))))
-
-;;TODO fix docs
+(def jar-name (format "%s.%s.%s.jar"
+                      (get-env :project)
+                      git-stamp
+                      (.format (java.text.SimpleDateFormat. "yyyy-MM-dd") (java.util.Date.))))
 (deftask build
   "Builds an uberjar of this project that can be run with java -jar"
   []
   (comp
-   (aot :namespace #{'main.entrypoint})
+   (aot :namespace #{'seazme.entrypoint})
    (uber)
-   ;; (jar :file "project.jar" :main 'main.entrypoint)
-   (jar :file "project.jar")
-   (sift :include #{#"project.jar"})
+   #_(show :fileset true);; TODO Merge conflict: not adding META-INF/LICENSE
+   (jar :file jar-name :main 'seazme.entrypoint)
+   (sift :include #{(re-pattern jar-name)})
    (target)))

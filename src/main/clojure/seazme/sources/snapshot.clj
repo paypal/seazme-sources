@@ -1,5 +1,6 @@
 (ns seazme.sources.snapshot
   (:require [clojure.data.json :as json]
+            [seazme.common.config :as config]
             [seazme.common.hbase :as hb]
             [cbass.tools :refer [to-bytes]]
             [cbass :refer [pack-un-pack]][taoensso.nippy :as n]);;this is hack waiting for fix: https://github.com/tolitius/cbass/issues/9
@@ -26,13 +27,11 @@
            :else (assert false "wrong type"))))
      nm)))
 
-(def field-mapping (-> "mapping.edn" slurp read-string))
-
 (defn- update-hbase![expl]
   (let [jts (jts-now)
         payload (-> expl second :self :payload)
         document-key (clojure.string/reverse (:id payload))
-        hive-cf-payload (into {} (apply-field-mapping field-mapping payload))
+        hive-cf-payload (into {} (apply-field-mapping config/mapping payload))
         datahub-cf-payload {"id" (:id payload)
                             "key" (:key payload)
                             "updated" (-> payload :fields :updated)
