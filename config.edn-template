@@ -8,6 +8,10 @@
                          :kind "hbase"
                          :prefix "test"
                          }
+ :context-hive          {
+                         :kind "hive"
+                         :table "namespace.name"
+                         }
  :context-hbase-snapshot {
                          :kind "hbase"
                          :prefix "snap"
@@ -118,6 +122,15 @@
                 :basic-auth ["*" "*"]
                 }
 
+ ;;-destination for integrity check
+ :integrity-e2e {
+             :kind "notif"
+             :from "noreply-...@...com"
+             :to ["email1"]
+             :subject "this is the subject"
+             :projects ["pr1" "pr2"]
+             }
+
  ;;-Hadoop (currently one hardcoded backend is supported)
  :hbase {
          :kind "hbase"
@@ -138,5 +151,10 @@
                     :user "<username>@<host>.COM" :path "username.keytab"
                     }
          }
+ :hive {
+        :subprotocol "hive2"
+        :classname "org.apache.hive.jdbc.HiveDriver"
+        :subname  "//<host>:<port>,<host>:<port>,.../;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2"
+        }
  :mta "smpt.domain.com"
  }

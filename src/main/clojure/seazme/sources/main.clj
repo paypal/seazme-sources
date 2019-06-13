@@ -7,6 +7,7 @@
             [seazme.sources.datahub :as dh]
             [seazme.sources.hbase2es :as h2e]
             [seazme.sources.snapshot :as ss]
+            [seazme.scripts.integrity-end2end :as ie2e]
             [clojure.tools.logging :as log]))
 
 (cli/defclifn -main
@@ -57,6 +58,10 @@
                     ["update" {:kind "hbase"}      {:kind "elasticsearch"}  _                     (p :guard nil?)]  (h2e/process-sessions! c a (es/mk-connection d));;includes "patch"
                     ["scan" {:kind "hbase"}        (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a)
                     ["update" {:kind "hbase"}      (d :guard nil?)          _                     (p :guard nil?)]  (ss/process-sessions! c a);;includes "patch"
+
+                    ;;Scripts
+                    ["check" {:kind "hive"}        {:kind "notif"}          {:kind "jira"}         _]               (ie2e/run c d s)
+
                     :else "options and/or config mismatch"))))
 
 (cli/defclifn -main

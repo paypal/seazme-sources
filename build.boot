@@ -27,6 +27,9 @@
                  [cbass "0.1.5"]
                  [com.grammarly/perseverance "0.1.2"]
                  [org.apache.hadoop/hadoop-common "2.6.0"] [com.google.guava/guava "15.0"]
+                 [org.clojure/java.jdbc "0.4.2"]
+                 [org.apache.hive/hive-jdbc "1.2.1000.2.4.2.10-1"]
+                 [org.apache.hive/hive-metastore "1.2.1000.2.4.2.10-1"]
                  [com.draines/postal "1.11.3"]
                  [hiccup "1.0.5"]
                  [danlentz/clj-uuid "0.1.7"]
@@ -34,7 +37,8 @@
                  [clj-jgit "0.8.9"]
                  [clj-time "0.11.0"]
                  ]
- :resource-paths   #{"resources" "src/main/clojure"})
+ :resource-paths   #{"resources" "src/main/clojure"}
+ :repositories #(conj % '["hortonworks.extrepo" {:url "http://repo.hortonworks.com/content/repositories/releases"}]))
 
 (require '[clj-jgit.porcelain :as p])
 
