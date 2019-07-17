@@ -21,8 +21,8 @@
 (def continue-default 40) ;;depends on hub's time-span and find-periods
 (defn make-sure[]
   ;;TODO automate this
-  (prn "Please delete a few last entries/days from cache dir, as they contain unnecessary data")
-  (prn "Warning: it might take a while to see results as all entries in the cache have to be verified"))
+  (println "Please delete a few last entries/days from cache dir, as they contain unnecessary data")
+  (println "Warning: it might take a while to see results as all entries in the cache have to be verified"))
 (defn- wrap-with-counter[f] (let [counter (atom 0)]
                               [counter (fn[& args] (swap! counter inc) (apply f args))]))
 (defn- jts-to-str[jts] (->> jts te/from-long (tf/unparse (tf/formatters :mysql))))
@@ -64,6 +64,7 @@
 ;;
 (defn twiki-scan![{:keys [app-id index kind path]} d {:keys [path]}]
   #_(prn "DEBUG" index kind d s)
+  (println "STARTING twiki-scan:"app-id index kind path(str "@"(tr/now)))
   (let [p (mk-datahub-post-api d)
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=twiki full scan&command=scan" app-id) nil)
         session-id (:key body)
@@ -80,7 +81,7 @@
          frequencies)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)
         ]
-    (prn "SUCCEEDED" ret1 ret2)
+    (println "SUCCEEDED:" (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
     )
   )
 
@@ -89,6 +90,7 @@
 ;;
 (defn confluence-scan![{:keys [app-id index kind]} d s]
   #_(prn "DEBUG" index kind d s)
+  (println "STARTING confluence-scan:"app-id index kind(str "@"(tr/now)))
   (let [p (mk-datahub-post-api d)
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=Confluence full scan&command=scan" app-id) nil)
         session-id (:key body)
@@ -102,11 +104,12 @@
               frequencies)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)
         ]
-    (prn "SUCCEEDED" ret1 ret2)
+    (println "SUCCEEDED:" (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
     )
   )
 (defn confluence-update![{:keys [app-id index kind]} d s continue]
   #_(prn "DEBUG" index kind d s continue)
+  (println "STARTING confluence-update:"app-id index kind(str "@"(tr/now)))
   (let [p (mk-datahub-post-api d)]
     (loop [limit continue-default]
       (when (pos? limit)
@@ -117,9 +120,9 @@
                       [counter cb] (wrap-with-counter #(p (format "intake-sessions/%s/document" session-id) (json/write-str %)))
                       ret1 (->> (c/pull-confl-incr2 s cb from to) frequencies)
                       ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-                  (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
+                  (println "SUCCEEDED:" (jts-to-str from) (jts-to-str to) status (pr-str body) (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
                   (when continue (recur (dec limit))))
-            202 (prn "FINISHED" status body)
+            202 (println "FINISHED:" status (pr-str body)(str "@"(tr/now)))
             (log/error "FAILED" status body)))))))
 
 ;;
@@ -136,12 +139,13 @@
         (if (neg? (compare old-updated updated))
           (do
             (swap! scanned-jira-keys assoc jira-key updated)
-            (println (str "posting:"jira-key" "jira-id" "updated" "old-updated))
+            (sync-println "\tposting:" jira-key jira-id updated old-updated)
             (and p (p payload)))
-          (println (str "skipping:"jira-key" "jira-id" "updated" "old-updated)))))))
+          (sync-println "\tskipping:" jira-key jira-id updated old-updated))))))
 
 (defn jira-scan![context d s]
   #_(prn "DEBUG" context d s)
+  (println "STARTING jira-scan:"context(str "@"(tr/now)))
   (make-sure)
   (let [{:keys [app-id index kind]} context
         pf (get s :parallel-factor 1)
@@ -156,11 +160,12 @@
               flatten
               frequencies)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-    (prn "SUCCEEDED" ret1 ret2)
+    (println "SUCCEEDED:" (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
     ))
 (defn jira-patch![context d s jql]
   #_(prn "DEBUG" context d s jql)
-  (println "WARNINIG: please suspend update due to slight risk overwriting issues")
+  (println "STARTING jira-patch:"context(str "@"(tr/now)))
+  (println "WARNINIG: please suspend update due to slight risk of overwriting issues")
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA patch&command=patch" app-id) nil);;TODO for parameters
@@ -170,10 +175,11 @@
         [counter cb] (wrap-with-counter (partial to-datahub #(p (format "intake-sessions/%s/document" session-id) (json/write-str %))))
         ret1 (j/upload-by-jql context pja-search-api cb jql)
         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-    (prn "SUCCEEDED" ret1 ret2)
+    (println "SUCCEEDED:" (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
     ))
 (defn jira-update![context d s continue]
   #_(prn "DEBUG" context d s continue)
+  (println "STARTING jira-update:"context(str "@"(tr/now)))
   (let [{:keys [app-id index kind]} context
         p (mk-datahub-post-api d)
         pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
@@ -186,24 +192,26 @@
                         [counter cb] (wrap-with-counter (partial to-datahub #(p (format "intake-sessions/%s/document" session-id) (json/write-str %))))
                         ret1 (j/upload-period context (:cache s) false pja-search-api cb (list from to))
                         ret2 (p (format "intake-sessions/%s/submit?count=%d" session-id @counter) nil)]
-                    (prn "SUCCEEDED" (jts-to-str from) (jts-to-str to) status body ret1 ret2)
+                    (println "SUCCEEDED:" (jts-to-str from) (jts-to-str to) status (pr-str body) (pr-str ret1) (pr-str ret2)(str "@"(tr/now)))
                     (when continue (recur (dec limit))))
-              202 (prn "FINISHED" status body)
+              202 (println "FINISHED:" status (pr-str body)(str "@"(tr/now)))
               (log/error "FAILED" status body)))))))
 
 (defn jira-scan-to-cache![context s]
   #_(prn "DEBUG" context s)
+  (println "STARTING jira-scan-to-cache:"context(str "@"(tr/now)))
   (make-sure)
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
         pf (get s :parallel-factor 1)]
     (->>
      (j/find-periods)
-     (pmapr pf (partial j/upload-period context true true pja-search-api #(println "posting:" (:key %) (:id %) (-> % :fields :updated))))
+     (pmapr pf (partial j/upload-period context true true pja-search-api #(sync-println "\tposting:" (:key %) (:id %) (-> % :fields :updated))))
      flatten
      frequencies)
     ))
 (defn jira-patch-to-cache![context d s jql]
   #_(prn "DEBUG" context d s jql)
+  (println "STARTING jira-patch-to-cache:"context(str "@"(tr/now)))
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
     (->>
      (j/upload-by-jql context pja-search-api (constantly "done") jql)

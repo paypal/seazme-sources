@@ -3,7 +3,8 @@
             [seazme.common.config :as config]
             [seazme.common.hbase :as hb]
             [cbass.tools :refer [to-bytes]]
-            [cbass :refer [pack-un-pack]][taoensso.nippy :as n]);;this is hack waiting for fix: https://github.com/tolitius/cbass/issues/9
+            [cbass :refer [pack-un-pack]][taoensso.nippy :as n];;this is hack waiting for fix: https://github.com/tolitius/cbass/issues/9
+            [clj-time.format :as tf] [clj-time.core :as tr] [clj-time.coerce :as te])
   (:use seazme.sources.common
         seazme.common.datahub
         seazme.common.common))
@@ -65,4 +66,7 @@
       nil)))
 
 (defn process-sessions![{:keys [prefix]} action]
-  (run-update-log! prefix action  action-snap action-snap))
+  (println "STARTING jira-patch:"prefix action(str "@"(tr/now)))
+  (run-update-log! prefix action  action-snap action-snap)
+  (println "SUCCEEDED"(str "@"(tr/now)))
+  )

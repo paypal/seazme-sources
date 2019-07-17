@@ -8,8 +8,8 @@
    [me.raynes.fs :as fs]
    [clojure.java.io :as io]
    [clojure.edn :as edn]
-   [clojure.java.io :refer [file]]
-   ))
+   [clojure.java.io :refer [file]])
+  (:use seazme.common.common))
 
 (def jira-ts-formatter (tf/formatters :date-time))
 
@@ -63,7 +63,8 @@
 (defn- upload-period-full-stream[{:keys [kind instance index]} cache skip-cache pja-search-api callback-fn period]
   #_(Thread/sleep (+ 10 (rand-int 100)))
   (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
-        msg (str (tc/now)" downloading JIRAs for:"(pr-str period2)" "cache" "kind" "instance" "index)
+        msg (str "JIRAs for:"(pr-str period2)" "cache" "kind" "instance" "index)
+        _ (sync-println "to download" msg (str "@"(tc/now)))
         base-path (format "db/%s-cache/%s/%s" kind instance index)
         _ (fs/mkdirs base-path)
         file-path (apply format "%s/%s-%s.edn.gz" base-path period2)
@@ -72,29 +73,29 @@
       (if (fs/exists? file-path)
         (if-not skip-cache
           (let [msg2 "... only from cache"
-                _ (println (str msg msg2))
+                _ (sync-println "downloading" msg msg2 (str "@"(tc/now)))
                 cnt (with-open [in (-> file-path io/input-stream java.util.zip.GZIPInputStream. io/reader java.io.PushbackReader.)]
                       (let[edn-seq (repeatedly (partial edn/read {:eof nil} in))
                            cnt (count (map callback-fn (take-while (partial not= nil) edn-seq)))]
                         cnt))]
-            (println (str msg msg2"...pulled:"cnt))
+            (sync-println "downloaded " msg msg2 ":" cnt (str "@"(tc/now)))
             msg2)
           (let [msg2 "... skipped"
-                _ (println (str msg msg2))]
+                _ (sync-println "downloaded " msg msg2 (str "@"(tc/now)))]
             msg2))
         (let [msg2 "... from JIRA save to cache"
-              _ (println (str msg msg2))
+              _ (sync-println "downloading" msg msg2 (str "@"(tc/now)))
               cnt (with-open [w (-> future-file-path io/output-stream java.util.zip.GZIPOutputStream. io/writer)]
                     (let [cb (combine-fun-calls (partial write-to-stream w) callback-fn)
                           cnt (count (period-search pja-search-api period cb))]
-                      (println (str msg"...pulled:"cnt))))]
+                      cnt))]
           (fs/rename (fs/file future-file-path) (fs/file file-path))
-          (println (str msg msg2"...pulled:"cnt))
+          (sync-println "downloaded " msg msg2 ":" cnt (str "@"(tc/now)))
           msg2))
       (let [msg2 "... only from JIRA"
-            _ (println (str msg msg2))
+            _ (sync-println "downloading" msg msg2 (str "@"(tc/now)))
             cnt (count (period-search pja-search-api period callback-fn))]
-        (println (str msg msg2"...pulled:"cnt))
+        (sync-println "downloaded " msg msg2 ":" cnt (str "@"(tc/now)))
         msg2))))
 (def upload-period upload-period-full-stream)
 
@@ -103,8 +104,7 @@
     (let [_ (println (str (tc/now)) "downloading JIRAs for:" jql)
           cb (combine-fun-calls (partial write-to-stream w) callback-fn)
           ret1 (jira-api/pja-search-full pja-search-api (format "%s ORDER BY updated ASC" jql) cb)]
-      (print "pulled" (count ret1))
-      (println "... done"))))
+      (println "downloaded" ":" (count ret1)))))
 
 (comment ;;this is original attempt and might not work any more, only for a reference
   (defn- compress! [fn s]
