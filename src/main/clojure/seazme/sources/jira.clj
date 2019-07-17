@@ -61,7 +61,7 @@
 (def period-search period-search-all-full)
 
 (defn- upload-period-full-stream[{:keys [kind instance index]} cache skip-cache pja-search-api callback-fn period]
-  (Thread/sleep (+ 10 (rand-int 100)))
+  #_(Thread/sleep (+ 10 (rand-int 100)))
   (let [period2 (->> period (map tr/to-date-time) (map (partial tf/unparse ff3)))
         msg (str (tc/now)" downloading JIRAs for:"(pr-str period2)" "cache" "kind" "instance" "index)
         base-path (format "db/%s-cache/%s/%s" kind instance index)

@@ -94,6 +94,7 @@
              :credentials ["*" "*"]
              :cache true
              :url "https://*/jira/rest"
+             :parallel-factor 1
              }
 :jira-test {
              :kind "jira"
@@ -101,6 +102,7 @@
              :cache true
              :url "https://*/jira/rest"
              :debug true
+             :parallel-factor 1
              }
 
  ;;-SNOW
@@ -114,7 +116,6 @@
                 :kind "datahub"
                 :host "https://*"
                 :basic-auth ["*" "*"]
-                :parallel-factor 1
                 }
 
  ;;-Hadoop (currently one hardcoded backend is supported)

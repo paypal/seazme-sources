@@ -144,7 +144,7 @@
   #_(prn "DEBUG" context d s)
   (make-sure)
   (let [{:keys [app-id index kind]} context
-        pf (get d :parallel-factor 1)
+        pf (get s :parallel-factor 1)
         p (mk-datahub-post-api d)
         {:keys [body status]} (p (format "intake-sessions?app-id=%s&description=JIRA full scan&command=scan" app-id) nil)
         session-id (:key body)
@@ -194,10 +194,11 @@
 (defn jira-scan-to-cache![context s]
   #_(prn "DEBUG" context s)
   (make-sure)
-  (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))]
+  (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
+        pf (get s :parallel-factor 1)]
     (->>
      (j/find-periods)
-     (map (partial j/upload-period context true true pja-search-api #(println "posting:" (:key %) (:id %) (-> % :fields :updated))))
+     (pmapr pf (partial j/upload-period context true true pja-search-api #(println "posting:" (:key %) (:id %) (-> % :fields :updated))))
      flatten
      frequencies)
     ))
