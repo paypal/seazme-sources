@@ -21,7 +21,7 @@
 (defn- write-to-stream[w s] (.write w (pr-str s)) (.newLine w))
 (def oldest-issue "2007/01/01 00:00")
 (def oldest-issue-DT (tf/parse ff2 oldest-issue))
-(def until-issue-DT (tc/minus (tc/now) (tc/days 1))) ;;leave 24h margin, assumed that full scan spans to now-48h so there is always an overlap
+(def until-issue-DT (tc/minus (tc/now) (tc/days 2))) ;;leave 2 days margin, assumed that full scan spans to now-4 days so there is always an overlap
 (defn date-since-first[r] (tc/plus oldest-issue-DT (tc/hours (* 3 r))))
 (defn find-periods[]
   (->>
