@@ -28,37 +28,49 @@
            :else (assert false "wrong type"))))
      nm)))
 
-(defn- update-hbase![expl]
-  (let [jts (jts-now)
-        payload (-> expl second :self :payload)
-        document-key (clojure.string/reverse (:id payload))
-        hive-cf-payload (into {} (apply-field-mapping config/mapping payload))
-        datahub-cf-payload {"id" (:id payload)
-                            "key" (:key payload)
-                            "updated" (-> payload :fields :updated)
-                            "status" (-> payload :fields :status :name)
-                            "meta" (json/write-str {:key document-key
-                                                    :source "sources"
-                                                    :type "document"
-                                                    :created jts})
-                            "payload" (json/write-str payload)}]
-    (println "\tposting:" (:key payload) (:id payload) (-> payload :fields :updated))
-    (pack-un-pack {:p #(to-bytes %)})
-    (hb/store** "datahub:snapshot-data" document-key "hive" hive-cf-payload)
-    (hb/store** "datahub:snapshot-data" document-key "datahub" datahub-cf-payload)
-    (pack-un-pack {:p n/freeze})))
 
 (defn- update-snapshot![session]
-  (let [session-id (-> session :self :meta :id)
+  (let [initiated (jts-now)
+        session-id (-> session :self :meta :id)
         session-tsx (-> session :self :meta :tsx)
         session-count (-> session :self :count)
+        user-name (System/getProperty "user.name")
+        user-dir (System/getProperty "user.dir")
+        pid (-> (java.lang.management.ManagementFactory/getRuntimeMXBean) .getName)
+        host-name (.getCanonicalHostName (java.net.InetAddress/getLocalHost))
+        update-hbase! (fn [expl]
+                        (let [jts (jts-now)
+                              payload (-> expl second :self :payload)
+                              document-key (clojure.string/reverse (:id payload))
+                              hive-cf-payload (into {} (apply-field-mapping config/mapping payload))
+                              datahub-cf-payload {"id" (:id payload)
+                                                  "key" (:key payload)
+                                                  "updated" (-> payload :fields :updated)
+                                                  "status" (-> payload :fields :status :name)
+                                                  "meta" (json/write-str {:key document-key
+                                                                          :user-name user-name
+                                                                          :user-dir user-dir
+                                                                          :pid pid
+                                                                          :host-name host-name
+                                                                          :session-id session-id
+                                                                          :session-count session-count
+                                                                          :source "sources"
+                                                                          :type "document"
+                                                                          :initiated initiated
+                                                                          :created jts})
+                                                  "payload" (json/write-str payload)}]
+                          (println "\tposting:" (:key payload) (:id payload) (-> payload :fields :updated))
+                          (pack-un-pack {:p #(to-bytes %)})
+                          (hb/store** "datahub:snapshot-data" document-key "hive" hive-cf-payload)
+                          (hb/store** "datahub:snapshot-data" document-key "datahub" datahub-cf-payload)
+                          (pack-un-pack {:p n/freeze})))
         real-cnt (->> dist-bytes
-                 (map #(->> % (get-data-entries-seq session-id) (map update-hbase!) doall))
-                 (mapcat identity)
-                 count)]
+                      (map #(->> % (get-data-entries-seq session-id) (map update-hbase!) doall))
+                      (mapcat identity)
+                      count)]
     real-cnt))
 
-(defn- action-snap[prefix ts prev-ts app session]
+(defn- action-snap![prefix ts prev-ts app session]
   (if (= "jira" (-> app :kind))
     (update-snapshot! session)
     (do
@@ -67,6 +79,6 @@
 
 (defn process-sessions![{:keys [prefix]} action]
   (println "STARTING jira-patch:"prefix action(str "@"(tr/now)))
-  (run-update-log! prefix action  action-snap action-snap)
+  (run-update-log! prefix action action-snap! action-snap!)
   (println "SUCCEEDED"(str "@"(tr/now)))
   )
