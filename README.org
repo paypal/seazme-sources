@@ -40,3 +40,20 @@ export BOOT_JVM_OPTIONS="-Xmx12g -XX:+UseSerialGC"
 Where ~executable~ is either ~sources~ or ~java -jar ~sources-<version-tag>.jar~ build with ~build~. Add ~-Dlog4j.configuration=file:resources/log4j.properties~ to java if logging is desired.
 
 Once above is completed (should take a few minutes), a subdirectory ~db~ is created. It contains both copy of Confluence and other data sources.
+
+*** crontab example
+
+~runme~:
+
+#+BEGIN_SRC
+#!/bin/bash
+cd ${0%/*}
+java -Dlog4j.configuration=file:log4j.properties -jar sources.jar -a update -c context-12h
+#+END_SRC
+
+#+BEGIN_SRC
+SHELL=/bin/bash
+PATH=/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin
+
+50 * * * * /usr/bin/flock -n /tmp/sources.lockfile seazme-sources/runme &>> runme.log
+#+END_SRC
