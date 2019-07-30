@@ -4,6 +4,7 @@
             [clojure.java.jdbc :as j]
             [seazme.common.config :as config]
             [seazme.common.notif :as n]
+            [perseverance.core :as p]
             [clojure.set :as s]
             [hiccup.core :as h]))
 
@@ -22,6 +23,7 @@
        (map (fn [{key :key {updated :updated {status :name} :status} :fields}] [key status updated]))
        distinct
        doall))
+(defn hive-get-projects-fingerprint* [& args] (p/retry {} (p/retriable {:catch [Exception]} (apply hive-get-projects-fingerprint args))))
 
 #_(defn mp25[x] (some #(.startsWith x (str % "-")) prjs))
 
@@ -52,5 +54,5 @@
 (defn run[{:keys [table]} d s]
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
         diff (for [p (d :projects)]
-               [p (diff-projects (hive-get-projects-fingerprint table p) (jira-get-projects-fingerprint pja-search-api p))])]
+               [p (diff-projects (hive-get-projects-fingerprint* table p) (jira-get-projects-fingerprint pja-search-api p))])]
     (n/send-email (d :from) (d :to) (d :subject) (mhtml-format diff))))
