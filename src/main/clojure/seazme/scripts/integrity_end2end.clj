@@ -6,7 +6,14 @@
             [seazme.common.notif :as n]
             [perseverance.core :as p]
             [clojure.set :as s]
-            [hiccup.core :as h]))
+            [hiccup.core :as h]
+            [clj-time.format :as tf] [clj-time.coerce :as tr] [clj-time.core :as tc]
+))
+
+
+(def jira-ts-full-frmt (tf/formatters :date-time))
+(def jira-ts-nomn-frmt (tf/formatters :date-time-no-ms))
+(defn- drop-ms [[key status updated]] [key status (tf/unparse jira-ts-nomn-frmt (tf/parse jira-ts-full-frmt updated))])
 
 ;;hive shell
 ;;> INSERT OVERWRITE LOCAL DIRECTORY '<full-path-to-destination-dir>' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' select <fields,separated> FROM <hivetable> where projectid in (<'PROJECT',sparated>)
@@ -27,7 +34,6 @@
 
 #_(defn mp25[x] (some #(.startsWith x (str % "-")) prjs))
 
-
 (defn- reshape [l] (into {} (for [[a & r] l] [a r])))
 (defn diff-projects [l r]
   (let [ld (reshape l)
@@ -36,6 +42,9 @@
         is-same (fn [l r] (if-not (= l r) [l r]))
         check-diff (fn [k] (let [l (ld k) r (rd k)] [k (is-same l r)]))]
     (->> all-keys (map check-diff) (remove (comp nil? second)) (into {}))))
+
+(defn diff-projects-noms [l r]
+  (diff-projects (map drop-ms l) (map drop-ms r)))
 
 (defn mhtml-diffs[diffs]
   (when-not (empty? diffs)
@@ -54,5 +63,5 @@
 (defn run[{:keys [table]} d s]
   (let [pja-search-api (jira-api/mk-pja-search-api (:url s) (:credentials s) (:debug s))
         diff (for [p (d :projects)]
-               [p (diff-projects (hive-get-projects-fingerprint* table p) (jira-get-projects-fingerprint pja-search-api p))])]
+               [p (diff-projects-noms (hive-get-projects-fingerprint* table p) (jira-get-projects-fingerprint pja-search-api p))])]
     (n/send-email (d :from) (d :to) (d :subject) (mhtml-format diff))))
